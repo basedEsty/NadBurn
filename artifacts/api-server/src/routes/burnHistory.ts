@@ -4,6 +4,7 @@ import {
   ListBurnHistoryResponse,
 } from "@workspace/api-zod";
 import { withUserClient } from "../lib/userDb";
+import { notifyBurn } from "../lib/discord";
 
 const router: IRouter = Router();
 
@@ -95,6 +96,17 @@ router.post("/burn-history", async (req: Request, res: Response) => {
             : String(row.created_at),
       };
     });
+
+    // Fire-and-forget Discord notification
+    notifyBurn({
+      tokenSymbol:    item.tokenSymbol,
+      tokenAddress:   item.tokenAddress ?? '',
+      amount:         item.amount,
+      mode:           item.mode,
+      txHash:         item.txHash,
+      recoveredNative: item.recoveredNative,
+    });
+
     res.status(201).json(item);
   } catch (err) {
     req.log.error({ err }, "Failed to insert burn history");
