@@ -7,6 +7,7 @@ const GUILD_ID         = '1446101090717270069';
 const BURNS_CHANNEL    = '1497404621142888539';
 const GENERAL_CHANNEL  = '1446101092906827790';
 const ANNOUNCE_CHANNEL = '1497404649219686481';
+const TEXT_CATEGORY    = '1446101092906827789'; // "Text Channels" category
 
 // ── Chess role IDs ──────────────────────────────────────────────
 const CHESS_ROLES = [
@@ -20,12 +21,10 @@ const CHESS_ROLES = [
 
 const CHESS_ROLE_IDS = new Set(CHESS_ROLES.map(r => r.id));
 
-// ── XP / level helpers ──────────────────────────────────────────
 function xpForLevel(n)    { return (n * (n + 1) / 2) * 100; }
 function levelFromXP(xp)  { let l = 0; while (l < 30 && xp >= xpForLevel(l + 1)) l++; return l; }
 function roleForLevel(lvl){ if (lvl < 1) return null; return CHESS_ROLES.find(r => lvl >= r.minLevel && lvl <= r.maxLevel) ?? null; }
 
-// ── Persistence ─────────────────────────────────────────────────
 const DATA_FILE = './levels.json';
 function loadData() {
   if (!existsSync(DATA_FILE)) return {};
@@ -33,7 +32,6 @@ function loadData() {
 }
 function saveData(d) { writeFileSync(DATA_FILE, JSON.stringify(d, null, 2)); }
 
-// ── Bot ──────────────────────────────────────────────────────────
 if (!TOKEN) { console.error('❌  Set DISCORD_BOT_TOKEN env var'); process.exit(1); }
 
 const client = new Client({
@@ -43,24 +41,18 @@ const client = new Client({
 const cooldowns = new Map();
 
 client.once(Events.ClientReady, async c => {
-  console.log(`✅  Logged in as ${c.user.tag} (id: ${c.user.id})`);
-  console.log(`📊  Leveling system active — max level 30`);
+  console.log(`✅  Logged in as ${c.user.tag}`);
 
-  // ── Fetch guild + all channels ───────────────────────────────
   let guild, channels;
   try {
     guild    = await client.guilds.fetch(GUILD_ID);
     channels = await guild.channels.fetch();
-    console.log(`\n📋  Channels in server (${channels.size} total):`);
-    channels.forEach(ch => {
-      if (ch) console.log(`   [${ch.type === ChannelType.GuildCategory ? 'CAT' : 'CH '}] "${ch.name}" — ${ch.id}`);
-    });
   } catch (err) {
     console.error('❌  Failed to fetch guild/channels:', err.message);
     return;
   }
 
-  // ── Channel setup: move feedback + lock info channels ────────
+  // ── Channel setup ────────────────────────────────────────────
   try {
     const find = kw => channels.find(c => c && c.name.toLowerCase().includes(kw.toLowerCase()));
 
@@ -68,22 +60,14 @@ client.once(Events.ClientReady, async c => {
     const announcements = channels.get(ANNOUNCE_CHANNEL);
     const instructions  = find('instruction');
     const links         = find('links');
-    const chatCategory  = channels.find(
-      c => c && c.type === ChannelType.GuildCategory && c.name.toLowerCase().includes('chat')
-    );
 
-    console.log('\n🔧  Setup targets:');
-    console.log(`   feedback:      ${feedback      ? `"${feedback.name}"` : '❌ not found'}`);
-    console.log(`   announcements: ${announcements ? `"${announcements.name}"` : '❌ not found'}`);
-    console.log(`   instructions:  ${instructions  ? `"${instructions.name}"` : '❌ not found'}`);
-    console.log(`   links:         ${links         ? `"${links.name}"` : '❌ not found'}`);
-    console.log(`   chat category: ${chatCategory  ? `"${chatCategory.name}"` : '❌ not found'}`);
-
-    if (feedback && chatCategory) {
-      await feedback.setParent(chatCategory.id, { lockPermissions: false });
-      console.log(`✅  Moved #${feedback.name} → "${chatCategory.name}"`);
+    // Move feedback under Text Channels (hardcoded category ID)
+    if (feedback) {
+      await feedback.setParent(TEXT_CATEGORY, { lockPermissions: false });
+      console.log(`✅  Moved #${feedback.name} → Text Channels`);
     }
 
+    // Lock: @everyone deny, bot allow
     const botId  = c.user.id;
     const toLock = [announcements, instructions, links].filter(Boolean);
     for (const ch of toLock) {
@@ -95,10 +79,10 @@ client.once(Events.ClientReady, async c => {
     console.error('❌  Channel setup error:', err.message);
   }
 
-  // ── Launch announcement (posts once — checks existing messages) ─
+  // ── Launch announcement (once) ───────────────────────────────
   try {
-    const announceCh = await client.channels.fetch(ANNOUNCE_CHANNEL);
-    const recent     = await announceCh.messages.fetch({ limit: 20 });
+    const announceCh    = await client.channels.fetch(ANNOUNCE_CHANNEL);
+    const recent        = await announceCh.messages.fetch({ limit: 20 });
     const alreadyPosted = recent.some(
       m => m.author.id === c.user.id && m.embeds?.[0]?.title?.includes('Nadburn is Live')
     );
