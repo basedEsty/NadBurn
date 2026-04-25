@@ -10,7 +10,8 @@ const WEBHOOK_URL =
 const MONAD_EXPLORER = 'https://explorer.monad.xyz/tx';
 
 async function notifyDiscord(item) {
-  const amount = Number(item.amount).toLocaleString('en-US', { maximumFractionDigits: 6 });
+  const raw = Number(item.amount) / Math.pow(10, item.tokenDecimals ?? 18);
+  const amount = raw.toLocaleString('en-US', { maximumFractionDigits: 6 });
   const modeLabel = item.mode === 'recover' ? '♻️ Recover' : '🔥 Pure Burn';
   const txUrl = `${MONAD_EXPLORER}/${item.txHash}`;
 
@@ -18,43 +19,42 @@ async function notifyDiscord(item) {
     title: `🔥 ${amount} ${item.tokenSymbol} Burned`,
     color: 0xff4500,
     fields: [
-      { name: 'Token',  value: item.tokenSymbol, inline: true },
-      { name: 'Amount', value: amount,            inline: true },
-      { name: 'Mode',   value: modeLabel,         inline: true },
+      { name: 'Token',   value: item.tokenSymbol, inline: true },
+      { name: 'Amount',  value: amount,            inline: true },
+      { name: 'Mode',    value: modeLabel,         inline: true },
       { name: 'Tx Hash', value: `[${item.txHash.slice(0, 10)}…](${txUrl})`, inline: false },
       ...(item.recoveredNative
-        ? [{ name: 'MON Recovered', value: `${Number(item.recoveredNative).toFixed(6)} MON`, inline: true }]
+        ? [{ name: 'MON Recovered', value: `${(Number(item.recoveredNative) / 1e18).toFixed(6)} MON`, inline: true }]
         : []),
     ],
     footer: { text: 'nadburn.xyz • burn it all' },
     timestamp: new Date().toISOString(),
   };
 
-  await fetch(WEBHOOK_URL, {
+  const resp = await fetch(WEBHOOK_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ embeds: [embed] }),
   });
+
+  if (!resp.ok) {
+    const text = await resp.text();
+    throw new Error(`Discord webhook ${resp.status}: ${text}`);
+  }
 }
 
 export default async function handler(req, res) {
-  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
+  if (req.method === 'OPTIONS') { res.status(200).end(); return; }
 
-  // GET — return empty list (history only available in dev via Replit API)
   if (req.method === 'GET') {
     res.status(200).json({ items: [] });
     return;
   }
 
-  // POST — record burn + notify Discord
   if (req.method === 'POST') {
     const data = req.body;
 
@@ -64,20 +64,25 @@ export default async function handler(req, res) {
     }
 
     const item = {
-      id:             crypto.randomUUID(),
-      chainId:        data.chainId,
-      tokenAddress:   data.tokenAddress ?? '',
-      tokenSymbol:    data.tokenSymbol,
-      tokenDecimals:  data.tokenDecimals ?? 18,
-      amount:         data.amount,
-      mode:           data.mode ?? 'burn',
-      txHash:         data.txHash,
+      id:              crypto.randomUUID(),
+      chainId:         data.chainId,
+      tokenAddress:    data.tokenAddress ?? '',
+      tokenSymbol:     data.tokenSymbol,
+      tokenDecimals:   data.tokenDecimals ?? 18,
+      amount:          data.amount,
+      mode:            data.mode ?? 'burn',
+      txHash:          data.txHash,
       recoveredNative: data.recoveredNative ?? null,
-      createdAt:      new Date().toISOString(),
+      createdAt:       new Date().toISOString(),
     };
 
-    // Fire-and-forget Discord notification
-    notifyDiscord(item).catch(err => console.error('Discord notify failed:', err));
+    // Await Discord before responding — serverless shuts down after res.json()
+    try {
+      await notifyDiscord(item);
+    } catch (err) {
+      console.error('Discord notify failed:', err.message);
+      // Non-fatal — still return success to frontend
+    }
 
     res.status(201).json(item);
     return;
