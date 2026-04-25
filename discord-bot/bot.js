@@ -12,7 +12,6 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
   ],
 });
 
@@ -36,8 +35,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
     );
 
     if (commandName === 'burn-stats') {
-      let totalBurns = burnMsgs.size;
-      let tokenCounts = {};
+      const totalBurns = burnMsgs.size;
+      const tokenCounts = {};
 
       burnMsgs.forEach((m) => {
         const embed = m.embeds[0];
