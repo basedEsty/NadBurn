@@ -1,10 +1,10 @@
-import { Client, GatewayIntentBits, EmbedBuilder, Events } from 'discord.js';
+import { Client, GatewayIntentBits, EmbedBuilder, Events, ChannelType } from 'discord.js';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 
-const TOKEN           = process.env.DISCORD_BOT_TOKEN;
-const GUILD_ID        = '1446101090717270069';
-const BURNS_CHANNEL   = '1497404621142888539';
-const GENERAL_CHANNEL = '1446101092906827790';
+const TOKEN            = process.env.DISCORD_BOT_TOKEN;
+const GUILD_ID         = '1446101090717270069';
+const BURNS_CHANNEL    = '1497404621142888539';
+const GENERAL_CHANNEL  = '1446101092906827790';
 const ANNOUNCE_CHANNEL = '1497404649219686481';
 
 // ── Chess role IDs ──────────────────────────────────────────────
@@ -20,52 +20,85 @@ const CHESS_ROLES = [
 const CHESS_ROLE_IDS = new Set(CHESS_ROLES.map(r => r.id));
 
 // ── XP / level helpers ──────────────────────────────────────────
-function xpForLevel(n) {
-  return (n * (n + 1) / 2) * 100;
-}
-
-function levelFromXP(xp) {
-  let lvl = 0;
-  while (lvl < 30 && xp >= xpForLevel(lvl + 1)) lvl++;
-  return lvl;
-}
-
-function roleForLevel(level) {
-  if (level < 1) return null;
-  return CHESS_ROLES.find(r => level >= r.minLevel && level <= r.maxLevel) ?? null;
-}
+function xpForLevel(n)    { return (n * (n + 1) / 2) * 100; }
+function levelFromXP(xp)  { let l = 0; while (l < 30 && xp >= xpForLevel(l + 1)) l++; return l; }
+function roleForLevel(lvl){ if (lvl < 1) return null; return CHESS_ROLES.find(r => lvl >= r.minLevel && lvl <= r.maxLevel) ?? null; }
 
 // ── Persistence ─────────────────────────────────────────────────
 const DATA_FILE     = './levels.json';
 const ANNOUNCE_FLAG = './announced.json';
+const SETUP_FLAG    = './channels_setup.json';
 
 function loadData() {
   if (!existsSync(DATA_FILE)) return {};
   try { return JSON.parse(readFileSync(DATA_FILE, 'utf8')); } catch { return {}; }
 }
+function saveData(d) { writeFileSync(DATA_FILE, JSON.stringify(d, null, 2)); }
 
-function saveData(data) {
-  writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+// ── One-time channel setup ───────────────────────────────────────
+// • Moves #feedback under the Chat Channels category
+// • Locks #announcements, #instructions, #links:
+//     @everyone  → SendMessages = DENY
+//     bot user   → SendMessages = ALLOW  (owner has ADMIN, bypasses all overwrites)
+async function setupChannels(guild) {
+  const channels = await guild.channels.fetch();
+  const find = kw => channels.find(c => c.name.toLowerCase().includes(kw.toLowerCase()));
+
+  const feedback      = find('feedback');
+  const announcements = find('announcement');
+  const instructions  = find('instruction');
+  const links         = find('links');
+  const chatCategory  = channels.find(
+    c => c.type === ChannelType.GuildCategory && c.name.toLowerCase().includes('chat')
+  );
+
+  // Move feedback under Chat Channels
+  if (feedback && chatCategory) {
+    await feedback.setParent(chatCategory.id, { lockPermissions: false });
+    console.log(`✅  Moved #${feedback.name} → ${chatCategory.name}`);
+  } else {
+    console.warn(`⚠️  Could not move feedback — feedback:${!!feedback} chatCategory:${!!chatCategory}`);
+  }
+
+  // Lock read-only channels
+  const botId   = client.user.id;
+  const toLock  = [announcements, instructions, links].filter(Boolean);
+
+  for (const ch of toLock) {
+    // Deny @everyone from sending
+    await ch.permissionOverwrites.edit(guild.roles.everyone, { SendMessages: false });
+    // Ensure bot can still send
+    await ch.permissionOverwrites.edit(botId, { SendMessages: true });
+    console.log(`🔒  Locked #${ch.name} — @everyone read-only, bot can write`);
+  }
 }
 
 // ── Bot ──────────────────────────────────────────────────────────
 if (!TOKEN) { console.error('❌  Set DISCORD_BOT_TOKEN env var'); process.exit(1); }
 
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-  ],
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
 });
 
-// userId -> last message timestamp (60s cooldown)
 const cooldowns = new Map();
 
 client.once(Events.ClientReady, async c => {
   console.log(`✅  Logged in as ${c.user.tag}`);
   console.log(`📊  Leveling system active — max level 30, chess roles enabled`);
 
-  // ── One-time launch announcement ──────────────────────────────
+  // ── Channel setup (once) ─────────────────────────────────────
+  if (!existsSync(SETUP_FLAG)) {
+    try {
+      const guild = await client.guilds.fetch(GUILD_ID);
+      await setupChannels(guild);
+      writeFileSync(SETUP_FLAG, JSON.stringify({ done: new Date().toISOString() }));
+      console.log('✅  Channel setup complete');
+    } catch (err) {
+      console.warn('⚠️  Channel setup failed:', err.message);
+    }
+  }
+
+  // ── Launch announcement (once) ───────────────────────────────
   if (!existsSync(ANNOUNCE_FLAG)) {
     try {
       const ch = await client.channels.fetch(ANNOUNCE_CHANNEL);
@@ -79,13 +112,12 @@ client.once(Events.ClientReady, async c => {
         )
         .setThumbnail('https://nadburn.xyz/favicon.svg')
         .addFields(
-          { name: '🌐 Website',   value: '[nadburn.xyz](https://nadburn.xyz)',        inline: true },
+          { name: '🌐 Website',   value: '[nadburn.xyz](https://nadburn.xyz)',         inline: true },
           { name: '🚀 App',       value: '[nadburn.xyz/app](https://nadburn.xyz/app)', inline: true },
           { name: '💬 Community', value: '[Join Discord](https://discord.gg/sbUnEANQ)', inline: true },
         )
         .setFooter({ text: 'nadburn.xyz • burn it all' })
         .setTimestamp();
-
       await ch.send({ embeds: [embed] });
       writeFileSync(ANNOUNCE_FLAG, JSON.stringify({ posted: new Date().toISOString() }));
       console.log('📢  Launch announcement posted to #announcements');
@@ -101,14 +133,13 @@ client.on(Events.MessageCreate, async message => {
 
   const userId = message.author.id;
   const now    = Date.now();
-
   if (cooldowns.has(userId) && now - cooldowns.get(userId) < 60_000) return;
   cooldowns.set(userId, now);
 
   const data = loadData();
   if (!data[userId]) data[userId] = { xp: 0, level: 0, username: message.author.username };
 
-  const xpGain = Math.floor(Math.random() * 11) + 15; // 15-25 XP
+  const xpGain = Math.floor(Math.random() * 11) + 15;
   data[userId].xp      += xpGain;
   data[userId].username = message.author.username;
 
@@ -121,7 +152,6 @@ client.on(Events.MessageCreate, async message => {
     const newRole = roleForLevel(newLevel);
     const oldRole = roleForLevel(oldLevel);
 
-    // Update roles
     try {
       const member = message.member;
       for (const rid of CHESS_ROLE_IDS) {
@@ -130,10 +160,8 @@ client.on(Events.MessageCreate, async message => {
       if (newRole) await member.roles.add(newRole.id);
     } catch (err) {
       console.warn(`⚠️  Role update failed for ${message.author.username}: ${err.message}`);
-      console.warn('    → Make sure the Signal role is ABOVE the chess roles in Server Settings → Roles');
     }
 
-    // Announce in #general
     try {
       const ch = await client.channels.fetch(GENERAL_CHANNEL);
       const rankChanged = newRole && newRole.id !== oldRole?.id;
@@ -162,7 +190,6 @@ client.on(Events.InteractionCreate, async interaction => {
   const { commandName } = interaction;
 
   try {
-    // /rank — show your own level
     if (commandName === 'rank') {
       const data  = loadData();
       const entry = data[interaction.user.id];
@@ -170,9 +197,9 @@ client.on(Events.InteractionCreate, async interaction => {
         await interaction.editReply('You have no XP yet — start chatting!');
         return;
       }
-      const role       = roleForLevel(entry.level);
-      const nextLevel  = entry.level < 30 ? entry.level + 1 : null;
-      const xpNeeded   = nextLevel ? xpForLevel(nextLevel) - entry.xp : 0;
+      const role      = roleForLevel(entry.level);
+      const nextLevel = entry.level < 30 ? entry.level + 1 : null;
+      const xpNeeded  = nextLevel ? xpForLevel(nextLevel) - entry.xp : 0;
       const embed = new EmbedBuilder()
         .setColor(0xff4500)
         .setTitle(`${role?.name ?? '🎖️'} ${entry.username}`)
@@ -187,33 +214,21 @@ client.on(Events.InteractionCreate, async interaction => {
         .setTimestamp();
       await interaction.editReply({ embeds: [embed] });
 
-    // /leaderboard — top 10
     } else if (commandName === 'leaderboard') {
-      const data  = loadData();
-      const sorted = Object.entries(data)
-        .sort(([, a], [, b]) => b.xp - a.xp)
-        .slice(0, 10);
-
-      if (sorted.length === 0) {
-        await interaction.editReply('No one has earned XP yet.');
-        return;
-      }
+      const data   = loadData();
+      const sorted = Object.entries(data).sort(([, a], [, b]) => b.xp - a.xp).slice(0, 10);
+      if (sorted.length === 0) { await interaction.editReply('No one has earned XP yet.'); return; }
 
       const medals = ['🥇', '🥈', '🥉'];
       const lines  = sorted.map(([, u], i) => {
         const role = roleForLevel(u.level);
         return `${medals[i] ?? `${i + 1}.`} **${u.username}** — Lvl ${u.level} • ${u.xp.toLocaleString()} XP ${role ? role.name : ''}`;
       });
-
       const embed = new EmbedBuilder()
-        .setColor(0xff4500)
-        .setTitle('🏆 Leaderboard')
-        .setDescription(lines.join('\n'))
-        .setFooter({ text: 'nadburn.xyz • burn it all' })
-        .setTimestamp();
+        .setColor(0xff4500).setTitle('🏆 Leaderboard').setDescription(lines.join('\n'))
+        .setFooter({ text: 'nadburn.xyz • burn it all' }).setTimestamp();
       await interaction.editReply({ embeds: [embed] });
 
-    // /burn-stats
     } else if (commandName === 'burn-stats') {
       const channel  = await client.channels.fetch(BURNS_CHANNEL);
       const messages = await channel.messages.fetch({ limit: 100 });
@@ -235,12 +250,10 @@ client.on(Events.InteractionCreate, async interaction => {
         .setFooter({ text: 'nadburn.xyz • burn it all' }).setTimestamp();
       await interaction.editReply({ embeds: [embed] });
 
-    // /latest-burns
     } else if (commandName === 'latest-burns') {
       const channel  = await client.channels.fetch(BURNS_CHANNEL);
       const messages = await channel.messages.fetch({ limit: 100 });
-      const recent   = messages.filter(m => m.webhookId && m.embeds.length > 0 && m.embeds[0].title?.includes('🔥'))
-        .first(5);
+      const recent   = messages.filter(m => m.webhookId && m.embeds.length > 0 && m.embeds[0].title?.includes('🔥')).first(5);
       if (!recent.length) {
         await interaction.editReply('No burns yet. Be the first at **nadburn.xyz**!');
         return;
@@ -249,11 +262,11 @@ client.on(Events.InteractionCreate, async interaction => {
         .setColor(0xff4500).setTitle('🔥 Latest Burns').setURL('https://nadburn.xyz')
         .setFooter({ text: 'nadburn.xyz • burn it all' }).setTimestamp();
       recent.forEach(m => {
-        const e        = m.embeds[0];
-        const amt      = e.fields?.find(f => f.name === 'Amount')?.value;
-        const sym      = e.fields?.find(f => f.name === 'Token')?.value;
-        const mode     = e.fields?.find(f => f.name === 'Mode')?.value;
-        const tx       = e.fields?.find(f => f.name === 'Tx Hash')?.value;
+        const e   = m.embeds[0];
+        const amt = e.fields?.find(f => f.name === 'Amount')?.value;
+        const sym = e.fields?.find(f => f.name === 'Token')?.value;
+        const mode = e.fields?.find(f => f.name === 'Mode')?.value;
+        const tx  = e.fields?.find(f => f.name === 'Tx Hash')?.value;
         embed.addFields({ name: `${sym} — ${amt}`, value: [mode, tx].filter(Boolean).join(' • ') || '—' });
       });
       await interaction.editReply({ embeds: [embed] });
