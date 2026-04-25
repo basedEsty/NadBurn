@@ -1,4 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+/* Font is loaded from index.html via a <link> so we don't pay the
+ * round-trip cost in our CSS bundle and don't trip the
+ * "@import must precede all other statements" PostCSS warning when
+ * Tailwind reorders things. */
 @import "tailwindcss";
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
@@ -190,6 +193,15 @@
 @layer base {
   * {
     @apply border-border;
+  }
+
+  html,
+  body {
+    /* Prevent rogue absolute / canvas elements from triggering a horizontal
+     * scrollbar on phones. Without this, the navbar's "Connect Wallet"
+     * button can appear clipped because the page is wider than the
+     * viewport. */
+    overflow-x: hidden;
   }
 
   body {

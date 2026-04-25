@@ -17,11 +17,11 @@ export default function LandingPage() {
           <FireParticles size={72} count={18} />
         </div>
         
-        <h1 className="halo-wrap font-serif text-5xl md:text-7xl font-bold tracking-tight text-white text-halo-soft">
+        <h1 className="halo-wrap font-serif text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight text-white text-halo-soft break-words">
           NadBurn — <span className="text-primary text-halo">Burn your Nads</span>
         </h1>
         
-        <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+        <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
           The cleanest way to wipe worthless tokens from your wallet. Send the nads straight to the void on Monad and Ethereum — or melt them back into MON when liquidity allows.
         </p>
 

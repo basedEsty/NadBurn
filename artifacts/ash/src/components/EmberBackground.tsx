@@ -1,11 +1,28 @@
 import { useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
 
-const NODE_COUNT = 70;
+// Particle counts scale down on phones / tablets so the canvas animation
+// doesn't pin a single core on weaker devices. We pick the bucket once at
+// mount based on inner width — picked thresholds match the Tailwind sm/md
+// breakpoints. Constants are kept as plain numbers (not refs) because the
+// animation loop reads them on every frame and any indirection would show
+// up in the profiler.
+function pickPerfBucket(): {
+  NODE_COUNT: number;
+  EMBER_COUNT: number;
+  ORB_COUNT: number;
+} {
+  if (typeof window === "undefined") {
+    return { NODE_COUNT: 70, EMBER_COUNT: 40, ORB_COUNT: 5 };
+  }
+  const w = window.innerWidth;
+  if (w < 640) return { NODE_COUNT: 28, EMBER_COUNT: 16, ORB_COUNT: 2 };
+  if (w < 1024) return { NODE_COUNT: 45, EMBER_COUNT: 26, ORB_COUNT: 3 };
+  return { NODE_COUNT: 70, EMBER_COUNT: 40, ORB_COUNT: 5 };
+}
+
 const LINK_DISTANCE = 185;
 const PULSE_INTERVAL = 1400;
-const ORB_COUNT = 5;
-const EMBER_COUNT = 40;
 
 type Node = {
   x: number;
@@ -54,6 +71,11 @@ const EmberBackground = () => {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    // Pick density once at mount based on viewport so phones don't try to
+    // animate the desktop-grade particle field. Re-bucketing on resize
+    // would re-seed the canvas mid-session, so we deliberately freeze it.
+    const { NODE_COUNT, EMBER_COUNT, ORB_COUNT } = pickPerfBucket();
 
     let animationFrameId: number;
     let nodes: Node[] = [];
