@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { Client, GatewayIntentBits, EmbedBuilder, Events, ChannelType } from 'discord.js';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 
@@ -64,7 +65,7 @@ client.once(Events.ClientReady, async c => {
     const find = kw => channels.find(c => c && c.name.toLowerCase().includes(kw.toLowerCase()));
 
     const feedback      = find('feedback');
-    const announcements = channels.get(ANNOUNCE_CHANNEL);   // use ID — guaranteed
+    const announcements = channels.get(ANNOUNCE_CHANNEL);
     const instructions  = find('instruction');
     const links         = find('links');
     const chatCategory  = channels.find(
@@ -78,13 +79,11 @@ client.once(Events.ClientReady, async c => {
     console.log(`   links:         ${links         ? `"${links.name}"` : '❌ not found'}`);
     console.log(`   chat category: ${chatCategory  ? `"${chatCategory.name}"` : '❌ not found'}`);
 
-    // Move feedback under Chat Channels category
     if (feedback && chatCategory) {
       await feedback.setParent(chatCategory.id, { lockPermissions: false });
       console.log(`✅  Moved #${feedback.name} → "${chatCategory.name}"`);
     }
 
-    // Lock: @everyone deny SendMessages, bot allow SendMessages
     const botId  = c.user.id;
     const toLock = [announcements, instructions, links].filter(Boolean);
     for (const ch of toLock) {
@@ -99,15 +98,13 @@ client.once(Events.ClientReady, async c => {
   // ── Launch announcement (posts once — checks existing messages) ─
   try {
     const announceCh = await client.channels.fetch(ANNOUNCE_CHANNEL);
-
-    // Check if bot already posted the launch announcement
-    const recent = await announceCh.messages.fetch({ limit: 20 });
+    const recent     = await announceCh.messages.fetch({ limit: 20 });
     const alreadyPosted = recent.some(
       m => m.author.id === c.user.id && m.embeds?.[0]?.title?.includes('Nadburn is Live')
     );
 
     if (alreadyPosted) {
-      console.log('ℹ️   Launch announcement already in #announcements — skipping');
+      console.log('ℹ️   Launch announcement already posted — skipping');
     } else {
       const embed = new EmbedBuilder()
         .setColor(0xff4500)
