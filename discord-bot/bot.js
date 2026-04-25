@@ -1,10 +1,11 @@
 import { Client, GatewayIntentBits, EmbedBuilder, Events } from 'discord.js';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 
-const TOKEN          = process.env.DISCORD_BOT_TOKEN;
-const GUILD_ID       = '1446101090717270069';
-const BURNS_CHANNEL  = '1497404621142888539';
+const TOKEN           = process.env.DISCORD_BOT_TOKEN;
+const GUILD_ID        = '1446101090717270069';
+const BURNS_CHANNEL   = '1497404621142888539';
 const GENERAL_CHANNEL = '1446101092906827790';
+const ANNOUNCE_CHANNEL = '1497404649219686481';
 
 // ── Chess role IDs ──────────────────────────────────────────────
 const CHESS_ROLES = [
@@ -19,7 +20,6 @@ const CHESS_ROLES = [
 const CHESS_ROLE_IDS = new Set(CHESS_ROLES.map(r => r.id));
 
 // ── XP / level helpers ──────────────────────────────────────────
-// XP needed to reach level N = sum(100 * i) for i = 1..N
 function xpForLevel(n) {
   return (n * (n + 1) / 2) * 100;
 }
@@ -36,7 +36,8 @@ function roleForLevel(level) {
 }
 
 // ── Persistence ─────────────────────────────────────────────────
-const DATA_FILE = './levels.json';
+const DATA_FILE     = './levels.json';
+const ANNOUNCE_FLAG = './announced.json';
 
 function loadData() {
   if (!existsSync(DATA_FILE)) return {};
@@ -60,9 +61,38 @@ const client = new Client({
 // userId -> last message timestamp (60s cooldown)
 const cooldowns = new Map();
 
-client.once(Events.ClientReady, c => {
+client.once(Events.ClientReady, async c => {
   console.log(`✅  Logged in as ${c.user.tag}`);
   console.log(`📊  Leveling system active — max level 30, chess roles enabled`);
+
+  // ── One-time launch announcement ──────────────────────────────
+  if (!existsSync(ANNOUNCE_FLAG)) {
+    try {
+      const ch = await client.channels.fetch(ANNOUNCE_CHANNEL);
+      const embed = new EmbedBuilder()
+        .setColor(0xff4500)
+        .setTitle('🔥 Nadburn is Live')
+        .setDescription(
+          '**The app is now live and ready to burn!**\n\n' +
+          'Head over to [nadburn.xyz](https://nadburn.xyz) and start burning your tokens.\n\n' +
+          '**[🚀 Launch App → nadburn.xyz/app](https://nadburn.xyz/app)**'
+        )
+        .setThumbnail('https://nadburn.xyz/favicon.svg')
+        .addFields(
+          { name: '🌐 Website',   value: '[nadburn.xyz](https://nadburn.xyz)',        inline: true },
+          { name: '🚀 App',       value: '[nadburn.xyz/app](https://nadburn.xyz/app)', inline: true },
+          { name: '💬 Community', value: '[Join Discord](https://discord.gg/sbUnEANQ)', inline: true },
+        )
+        .setFooter({ text: 'nadburn.xyz • burn it all' })
+        .setTimestamp();
+
+      await ch.send({ embeds: [embed] });
+      writeFileSync(ANNOUNCE_FLAG, JSON.stringify({ posted: new Date().toISOString() }));
+      console.log('📢  Launch announcement posted to #announcements');
+    } catch (err) {
+      console.warn('⚠️  Announcement failed:', err.message);
+    }
+  }
 });
 
 // ── XP on every message ─────────────────────────────────────────
@@ -94,11 +124,9 @@ client.on(Events.MessageCreate, async message => {
     // Update roles
     try {
       const member = message.member;
-      // Strip all old chess roles
       for (const rid of CHESS_ROLE_IDS) {
         if (member.roles.cache.has(rid)) await member.roles.remove(rid);
       }
-      // Assign new chess role
       if (newRole) await member.roles.add(newRole.id);
     } catch (err) {
       console.warn(`⚠️  Role update failed for ${message.author.username}: ${err.message}`);
