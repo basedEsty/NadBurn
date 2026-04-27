@@ -342,7 +342,12 @@
   .halo-wrap::before {
     content: "";
     position: absolute;
-    inset: -25% -15%;
+    /* Vertical inset stays generous so the violet glow extends above and
+       below the heading. Horizontal inset is 0 so the glow can never push
+       the heading past the viewport edge on mobile, which used to trigger
+       a horizontal scrollbar. The blur(24px) softens the side edges so
+       the clip is invisible. */
+    inset: -25% 0;
     background: radial-gradient(
       ellipse at center,
       rgba(168, 85, 247, 0.35) 0%,

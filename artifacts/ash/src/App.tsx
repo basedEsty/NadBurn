@@ -79,7 +79,7 @@ function Router() {
   const { effects } = useAnimationPrefs();
   return (
     <MotionConfig reducedMotion={effects ? "user" : "always"}>
-      <div className="relative min-h-screen flex flex-col font-sans selection:bg-primary/30">
+      <div className="relative min-h-screen w-full max-w-full overflow-x-hidden flex flex-col font-sans selection:bg-primary/30">
         <EmberBackground />
         <CustomCursor />
         <Navbar />
