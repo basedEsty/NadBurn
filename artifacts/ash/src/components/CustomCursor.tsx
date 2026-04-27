@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useAnimationPrefs } from "@/lib/animation-prefs";
 
 const TEXT_FIELD_SELECTOR =
   'input[type="text"], input[type="email"], input[type="password"], ' +
@@ -10,19 +11,23 @@ const INTERACTIVE_SELECTOR =
   'input[type="submit"], input[type="button"], input[type="checkbox"], ' +
   'input[type="radio"], label[for], summary, select';
 
+// Synchronous read — running this inside useState's initializer (instead
+// of an effect) avoids a one-frame "no cursor" flash when the user toggles
+// the custom cursor back on, since the CSS class is added immediately by
+// setAnimationPref but the component would otherwise wait a render to mount.
+function isFinePointer(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(pointer: fine)").matches;
+}
+
 export default function CustomCursor() {
-  const [enabled, setEnabled] = useState(false);
+  const prefs = useAnimationPrefs();
   const arrowRef = useRef<HTMLDivElement | null>(null);
   const [hovering, setHovering] = useState(false);
   const [pressed, setPressed] = useState(false);
   const [overText, setOverText] = useState(false);
   const [hidden, setHidden] = useState(true);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const fine = window.matchMedia("(pointer: fine)").matches;
-    setEnabled(fine);
-  }, []);
+  const enabled = isFinePointer() && prefs.cursor;
 
   useEffect(() => {
     if (!enabled) return;

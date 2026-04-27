@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
+import { useAnimationPrefs } from '@/lib/animation-prefs';
 
 // Particle counts scale down on phones / tablets so the canvas animation
 // doesn't pin a single core on weaker devices. We pick the bucket once at
@@ -65,8 +66,10 @@ const EmberBackground = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const transitionRef = useRef<{ start: number; cx: number; cy: number } | null>(null);
   const [location] = useLocation();
+  const { background: backgroundEnabled } = useAnimationPrefs();
 
   useEffect(() => {
+    if (!backgroundEnabled) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -342,16 +345,34 @@ const EmberBackground = () => {
       window.removeEventListener('resize', resize);
       cancelAnimationFrame(animationFrameId);
     };
-  }, []);
+  }, [backgroundEnabled]);
 
   // Trigger a constellation shockwave on every route change.
   useEffect(() => {
+    if (!backgroundEnabled) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const cx = canvas.width / 2;
     const cy = canvas.height / 2;
     transitionRef.current = { start: performance.now(), cx, cy };
-  }, [location]);
+  }, [location, backgroundEnabled]);
+
+  if (!backgroundEnabled) {
+    // Render a static gradient that matches the canvas's resting palette
+    // (deep slate-black with a soft violet whisper at the bottom). This
+    // way the page never goes flat-black when the user opts out — and the
+    // GPU/CPU stays idle.
+    return (
+      <div
+        aria-hidden
+        className="fixed inset-0 w-full h-full pointer-events-none z-0"
+        style={{
+          background:
+            "linear-gradient(to bottom, #040406 0%, #0c0a14 65%, #15111c 100%)",
+        }}
+      />
+    );
+  }
 
   return (
     <canvas

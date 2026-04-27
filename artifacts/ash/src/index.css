@@ -265,11 +265,14 @@
 }
 
 @media (pointer: fine) {
-  html,
-  body,
-  *,
-  *::before,
-  *::after {
+  /* Scoped to `html.custom-cursor-on` so the user can opt out of the custom
+     cursor from the Performance menu and get their native system cursor back
+     instantly. The class is toggled by `lib/animation-prefs.ts`. */
+  html.custom-cursor-on,
+  html.custom-cursor-on body,
+  html.custom-cursor-on *,
+  html.custom-cursor-on *::before,
+  html.custom-cursor-on *::after {
     cursor: none !important;
   }
 

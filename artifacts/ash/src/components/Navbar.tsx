@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { FireParticles } from "./FireParticles";
 import ConnectWallet from "./ConnectWallet";
+import PerformanceMenu from "./PerformanceMenu";
 
 export default function Navbar() {
   return (
@@ -12,7 +13,8 @@ export default function Navbar() {
             NadBurn
           </span>
         </Link>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1 sm:gap-2">
+          <PerformanceMenu />
           <ConnectWallet />
         </div>
       </div>

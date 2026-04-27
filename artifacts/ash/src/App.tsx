@@ -2,6 +2,7 @@ import { Component, lazy, Suspense, type ReactNode } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider } from "wagmi";
+import { MotionConfig } from "framer-motion";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { wagmiConfig } from "@/lib/wagmi";
@@ -9,6 +10,7 @@ import LandingPage from "@/pages/LandingPage";
 import Navbar from "@/components/Navbar";
 import EmberBackground from "@/components/EmberBackground";
 import CustomCursor from "@/components/CustomCursor";
+import { useAnimationPrefs } from "@/lib/animation-prefs";
 
 // Heavy routes (BurnerApp pulls in framer-motion screens, dialogs, charts)
 // are split into their own chunk so the landing page paints fast on mobile
@@ -69,23 +71,31 @@ class RouteErrorBoundary extends Component<
 }
 
 function Router() {
+  // When the user disables decorative effects, force framer-motion into
+  // "always reduced motion" — that flips every motion.* component on the
+  // page (LandingPage entrances, BurnerApp token list transitions,
+  // BurnProgress overlay/step animations) into instantaneous renders, so
+  // the menu's "stops every running animation" promise actually holds.
+  const { effects } = useAnimationPrefs();
   return (
-    <div className="relative min-h-screen flex flex-col font-sans selection:bg-primary/30">
-      <EmberBackground />
-      <CustomCursor />
-      <Navbar />
-      <main className="flex-1 relative z-10 flex flex-col">
-        <RouteErrorBoundary>
-          <Suspense fallback={<RouteFallback />}>
-            <Switch>
-              <Route path="/" component={LandingPage} />
-              <Route path="/app" component={BurnerApp} />
-              <Route component={NotFound} />
-            </Switch>
-          </Suspense>
-        </RouteErrorBoundary>
-      </main>
-    </div>
+    <MotionConfig reducedMotion={effects ? "user" : "always"}>
+      <div className="relative min-h-screen flex flex-col font-sans selection:bg-primary/30">
+        <EmberBackground />
+        <CustomCursor />
+        <Navbar />
+        <main className="flex-1 relative z-10 flex flex-col">
+          <RouteErrorBoundary>
+            <Suspense fallback={<RouteFallback />}>
+              <Switch>
+                <Route path="/" component={LandingPage} />
+                <Route path="/app" component={BurnerApp} />
+                <Route component={NotFound} />
+              </Switch>
+            </Suspense>
+          </RouteErrorBoundary>
+        </main>
+      </div>
+    </MotionConfig>
   );
 }
 

@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useMemo } from "react";
+import { useAnimationPrefs } from "@/lib/animation-prefs";
 
 interface FireParticlesProps {
   size?: number;
@@ -8,6 +9,7 @@ interface FireParticlesProps {
 }
 
 export function FireParticles({ size = 48, count = 14, className = "" }: FireParticlesProps) {
+  const { effects: effectsEnabled } = useAnimationPrefs();
   const particles = useMemo(
     () =>
       Array.from({ length: count }).map((_, i) => ({
@@ -21,6 +23,41 @@ export function FireParticles({ size = 48, count = 14, className = "" }: FirePar
       })),
     [count, size]
   );
+
+  if (!effectsEnabled) {
+    // Static fallback — keeps the silhouette and color story but skips the
+    // ~15 framer-motion particles per instance, which adds up fast on pages
+    // with several burners visible at once.
+    return (
+      <div
+        className={`relative inline-block ${className}`}
+        style={{ width: size, height: size }}
+        aria-hidden
+      >
+        <div
+          className="absolute left-1/2 -translate-x-1/2 bottom-0 rounded-full"
+          style={{
+            width: size * 0.6,
+            height: size * 0.2,
+            background:
+              "radial-gradient(ellipse, hsla(270, 90%, 60%, 0.55), transparent 70%)",
+            filter: "blur(6px)",
+          }}
+        />
+        <div
+          className="absolute left-1/2 -translate-x-1/2 rounded-full"
+          style={{
+            bottom: size * 0.05,
+            width: size * 0.35,
+            height: size * 0.35,
+            background:
+              "radial-gradient(circle, hsla(280, 95%, 75%, 0.95), hsla(270, 90%, 50%, 0) 70%)",
+            filter: "blur(2px)",
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div
