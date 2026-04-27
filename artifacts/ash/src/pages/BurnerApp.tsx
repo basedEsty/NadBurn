@@ -173,6 +173,16 @@ export default function BurnerApp() {
   const [autoTokens, setAutoTokens] = useState<`0x${string}`[]>([]);
   const [autoScanning, setAutoScanning] = useState(false);
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
+  // Snapshot of full TokenBalance data taken at the moment a user selects a
+  // token. We can't rely on looking the token back up in `discoveredTokens`
+  // at confirm/burn time — that array is rebuilt on every balance refetch
+  // and a momentary 0n read (RPC blip, indexer race, mid-burn refresh) can
+  // make a token disappear from the list. Without this snapshot the confirm
+  // dialog would silently drop those tokens, which surfaced as the
+  // "selected 3, dialog shows 1" bug.
+  const [selectedSnapshots, setSelectedSnapshots] = useState<
+    Record<string, TokenBalance>
+  >({});
   const [mode, setMode] = useState<BurnMode>("burn");
   const [quotes, setQuotes] = useState<Record<string, bigint>>({});
   // Per-token reason a quote came back zero. We surface this in the UI so
@@ -364,6 +374,33 @@ export default function BurnerApp() {
     setDiscoveredTokens(tokens);
   }, [nativeBalance, tokenData, tokensToCheck]);
 
+  // Keep selection snapshots in sync with the freshest discovered balances
+  // so that, if the user lets the page sit between selecting and confirming,
+  // we burn against the latest known balance — but a momentary 0n drop in
+  // the live list never deletes a snapshot. The snapshot is only ever
+  // cleared by an explicit deselect or by completing a burn batch.
+  useEffect(() => {
+    if (discoveredTokens.length === 0) return;
+    setSelectedSnapshots((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const t of discoveredTokens) {
+        if (t.address in prev) {
+          const cur = prev[t.address];
+          if (
+            cur.balance !== t.balance ||
+            cur.decimals !== t.decimals ||
+            cur.symbol !== t.symbol
+          ) {
+            next[t.address] = t;
+            changed = true;
+          }
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [discoveredTokens]);
+
   // Quote selected tokens in recover mode. Two backends:
   //   - "v2": on-chain getAmountsOut against a Uniswap V2 router
   //   - "trading-api": Uniswap Trading API via our backend proxy (chain 143)
@@ -553,11 +590,29 @@ export default function BurnerApp() {
     void handleAutoDetect(true);
   }, [isConnected, address, chainId, handleAutoDetect]);
 
+  // Reset every selection-adjacent piece of state when the active wallet,
+  // network, or connection status changes. Without this, a selection made
+  // on chain A would still be actionable after switching to chain B (the
+  // action button is gated on `selectedTokens.size`), and we'd happily
+  // send `transfer` calls against chain-A addresses on chain B's RPC.
+  useEffect(() => {
+    setSelectedTokens(new Set());
+    setSelectedSnapshots({});
+    setTokenAmounts({});
+    setQuotes({});
+    setQuoteErrors({});
+    setConfirmOpen(false);
+  }, [chainId, address, isConnected]);
+
   const handleSelectAll = () => {
     if (selectedTokens.size === discoveredTokens.length) {
       setSelectedTokens(new Set());
+      setSelectedSnapshots({});
     } else {
       setSelectedTokens(new Set(discoveredTokens.map((t) => t.address)));
+      setSelectedSnapshots(
+        Object.fromEntries(discoveredTokens.map((t) => [t.address, t])),
+      );
     }
   };
 
@@ -670,21 +725,49 @@ export default function BurnerApp() {
   };
 
   const toggleSelection = (tokenAddr: string) => {
-    const newSet = new Set(selectedTokens);
-    if (newSet.has(tokenAddr)) {
-      newSet.delete(tokenAddr);
-      // Drop the override when the token is deselected so a future
-      // re-select starts from "full balance" again.
+    // Functional updaters for every related piece of state so that two
+    // taps in the same event tick (Radix Checkbox click + bubbled row
+    // onClick) can never read a stale closure value and clobber each
+    // other. We also derive the selection-related state changes from the
+    // *previous* selection set, not from the current closure, so all three
+    // pieces (selection, snapshot, amount override) stay consistent.
+    let nowSelected = false;
+    setSelectedTokens((prev) => {
+      const next = new Set(prev);
+      if (next.has(tokenAddr)) {
+        next.delete(tokenAddr);
+        nowSelected = false;
+      } else {
+        next.add(tokenAddr);
+        nowSelected = true;
+      }
+      return next;
+    });
+    setSelectedSnapshots((prev) => {
+      if (tokenAddr in prev && !nowSelected) {
+        const { [tokenAddr]: _, ...rest } = prev;
+        return rest;
+      }
+      if (nowSelected && !(tokenAddr in prev)) {
+        // Snapshot the freshest token data so the confirm dialog and burn
+        // loop both see this exact entry even if the live token list
+        // refetches and momentarily drops it.
+        const fresh = discoveredTokens.find((t) => t.address === tokenAddr);
+        if (!fresh) return prev;
+        return { ...prev, [tokenAddr]: fresh };
+      }
+      return prev;
+    });
+    // Drop any custom amount override only when the token is being
+    // deselected — so a later re-select starts from "full balance" again.
+    if (!nowSelected) {
       setTokenAmounts((prev) => {
         if (!(tokenAddr in prev)) return prev;
         const next = { ...prev };
         delete next[tokenAddr];
         return next;
       });
-    } else {
-      newSet.add(tokenAddr);
     }
-    setSelectedTokens(newSet);
   };
 
   const setAmountFraction = (
@@ -746,7 +829,14 @@ export default function BurnerApp() {
 
   const confirmTokens = useMemo<ConfirmTokenLine[]>(() => {
     return Array.from(selectedTokens)
-      .map((a) => discoveredTokens.find((t) => t.address === a))
+      .map(
+        (a) =>
+          // Snapshot is the source of truth — `discoveredTokens` can briefly
+          // drop a token on a 0n RPC blip, which used to make the dialog
+          // show fewer rows than the user actually selected.
+          selectedSnapshots[a] ??
+          discoveredTokens.find((t) => t.address === a),
+      )
       .filter((t): t is TokenBalance => !!t)
       .map((t) => {
         const quote = t.address === "native" ? 0n : quotes[t.address as string] ?? 0n;
@@ -783,9 +873,16 @@ export default function BurnerApp() {
   const handleAction = async () => {
     if (!address) return;
 
-    // Build initial step list
+    // Build initial step list. Read from snapshots first (taken at
+    // selection time) so a refetch that briefly drops a token from
+    // `discoveredTokens` doesn't cause it to silently vanish from the burn
+    // batch — the bug behind "selected 3, only 1 burned" reports.
     const tokensInOrder = Array.from(selectedTokens)
-      .map((a) => discoveredTokens.find((t) => t.address === a))
+      .map(
+        (a) =>
+          selectedSnapshots[a] ??
+          discoveredTokens.find((t) => t.address === a),
+      )
       .filter((t): t is TokenBalance => !!t);
 
     const steps: ProgressStep[] = [];
@@ -842,6 +939,11 @@ export default function BurnerApp() {
             to: FEE_RECIPIENT,
             value: recoveryFeeWei,
           });
+          // Wait for the fee tx to mine before kicking off the per-token
+          // loop — same wallet-nonce/gas-estimation reason as every other
+          // tx below. Without this, the first token's signature request can
+          // hit the wallet while the fee is still in mempool.
+          await publicClient!.waitForTransactionReceipt({ hash: feeHash });
           updateStep("fee", { status: "success", detail: `Tx: ${feeHash.slice(0, 14)}…` });
         } catch (err: any) {
           updateStep("fee", {
@@ -872,6 +974,12 @@ export default function BurnerApp() {
               to: BURN_ADDRESS,
               value: amt,
             });
+            // Wait for the tx to mine before moving to the next token. Some
+            // wallets (mobile especially) get confused about nonce / gas
+            // estimation when a second signature request arrives before the
+            // first tx is in a block — this is what caused the "last token
+            // in batch fails but works alone" reports.
+            await publicClient!.waitForTransactionReceipt({ hash });
             updateStep(burnId, { status: "success", detail: `Tx: ${hash.slice(0, 14)}…` });
             burned += 1;
             api
@@ -988,6 +1096,9 @@ export default function BurnerApp() {
                   functionName: "transfer",
                   args: [BURN_ADDRESS, amt],
                 });
+                await publicClient!.waitForTransactionReceipt({
+                  hash: burnHash,
+                });
                 setProgressSteps((prev) => [
                   ...prev,
                   {
@@ -1027,6 +1138,7 @@ export default function BurnerApp() {
                 data: swapTx.data,
                 value: BigInt(swapTx.value || "0"),
               });
+              await publicClient!.waitForTransactionReceipt({ hash: swapHash });
               updateStep(swapId, {
                 status: "success",
                 detail: `Tx: ${swapHash.slice(0, 14)}…`,
@@ -1107,6 +1219,9 @@ export default function BurnerApp() {
                 functionName: "transfer",
                 args: [BURN_ADDRESS, amt],
               });
+              await publicClient!.waitForTransactionReceipt({
+                hash: burnHash,
+              });
               setProgressSteps((prev) => [
                 ...prev,
                 {
@@ -1133,6 +1248,7 @@ export default function BurnerApp() {
               functionName: "swapExactTokensForETHSupportingFeeOnTransferTokens",
               args: [amt, minOut, [token.address, dex.wrappedNative], address, deadline],
             });
+            await publicClient!.waitForTransactionReceipt({ hash: swapHash });
             updateStep(swapId, {
               status: "success",
               detail: `Tx: ${swapHash.slice(0, 14)}…`,
@@ -1160,6 +1276,7 @@ export default function BurnerApp() {
               functionName: "transfer",
               args: [BURN_ADDRESS, amt],
             });
+            await publicClient!.waitForTransactionReceipt({ hash });
             updateStep(burnId, { status: "success", detail: `Tx: ${hash.slice(0, 14)}…` });
             burned += 1;
             api
@@ -1191,6 +1308,7 @@ export default function BurnerApp() {
       }
 
       setSelectedTokens(new Set());
+      setSelectedSnapshots({});
       refetchNative();
       refetchTokens();
       if (isAuthenticated) {
