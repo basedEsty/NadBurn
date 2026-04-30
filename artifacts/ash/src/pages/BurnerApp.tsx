@@ -169,6 +169,32 @@ export default function BurnerApp() {
     chainId,
   );
 
+  // Auto-switch to Monad mainnet (chain 143) on first connect. Most wallets
+  // come back online on Ethereum mainnet by default, but Nadburn is a Monad-
+  // first dApp — landing on the wrong chain confuses users and shows zero
+  // tokens. We only attempt once per session so users who deliberately want
+  // to operate on Ethereum can switch back without us yanking them away.
+  const [autoSwitchAttempted, setAutoSwitchAttempted] = useState(false);
+  useEffect(() => {
+    if (!isConnected) {
+      setAutoSwitchAttempted(false);
+      return;
+    }
+    if (autoSwitchAttempted) return;
+    if (chainId === 143) return;
+    setAutoSwitchAttempted(true);
+    switchChain(
+      { chainId: 143 },
+      {
+        onError: () => {
+          // Swallow — wallet may not have Monad enabled. The "Couldn't switch
+          // network" toast from handleSwitchChain would be confusing here
+          // since the user didn't explicitly ask to switch.
+        },
+      },
+    );
+  }, [isConnected, chainId, autoSwitchAttempted, switchChain]);
+
   const [customTokenInput, setCustomTokenInput] = useState("");
   const [customTokens, setCustomTokens] = useState<`0x${string}`[]>([]);
   const [autoTokens, setAutoTokens] = useState<`0x${string}`[]>([]);
