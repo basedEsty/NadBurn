@@ -1675,6 +1675,12 @@ export default function BurnerApp() {
                 placeholder="0x..."
                 value={customTokenInput}
                 onChange={(e) => setCustomTokenInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddCustomToken();
+                  }
+                }}
                 className="bg-black/50 border-white/10 text-white font-mono"
               />
               <Button variant="secondary" onClick={handleAddCustomToken}>
