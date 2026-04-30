@@ -2,14 +2,21 @@
  * Vercel serverless function — /api/explorer/tokens
  * Auto-detects ERC-20 tokens held by a wallet address.
  *
- * - Ethereum mainnet (chain 1): Blockscout
- * - Monad testnet (chain 10143): Blockscout
- * - Monad mainnet (chain 143): Blockvision (requires BLOCKVISION_API_KEY)
+ * Provider priority:
+ *   - Ethereum mainnet (1): Alchemy → Blockscout
+ *   - Monad mainnet (143): Alchemy → Blockvision → empty
+ *   - Monad testnet (10143): Alchemy testnet → Blockscout testnet
  */
 
-const EXPLORER_BASE = {
+const BLOCKSCOUT_BASE = {
   1: 'https://eth.blockscout.com',
   10143: 'https://testnet.monadexplorer.com',
+};
+
+const ALCHEMY_HOST = {
+  1:     'https://eth-mainnet.g.alchemy.com',
+  143:   'https://monad-mainnet.g.alchemy.com',
+  10143: 'https://monad-testnet.g.alchemy.com',
 };
 
 const BLOCKVISION_BASE = 'https://api.blockvision.org';
@@ -52,80 +59,103 @@ async function readJsonWithLimit(r, maxBytes) {
   return JSON.parse(new TextDecoder().decode(combined));
 }
 
-export default async function handler(req, res) {
-  applyCors(req, res);
-  if (req.method === 'OPTIONS') { res.status(200).end(); return; }
-  if (req.method !== 'GET') { res.status(405).json({ error: 'Method not allowed' }); return; }
+/**
+ * Try Alchemy's alchemy_getTokenBalances RPC method.
+ * Returns null if no API key, or the chain isn't supported.
+ * Returns tokens array on success (only addresses with non-zero balance).
+ */
+async function tryAlchemy(chainId, address) {
+  const host = ALCHEMY_HOST[chainId];
+  if (!host) return null;
+  const apiKey = process.env.ALCHEMY_API_KEY;
+  if (!apiKey) return null;
 
-  const chainId = Number(req.query.chainId);
-  const address = String(req.query.address ?? '');
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10_000);
+  try {
+    const r = await fetch(`${host}/v2/${apiKey}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'alchemy_getTokenBalances',
+        params: [address, 'erc20'],
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!r.ok) return null;
+    const raw = await readJsonWithLimit(r, MAX_RESPONSE_BYTES);
+    const balances = raw?.result?.tokenBalances;
+    if (!Array.isArray(balances)) return null;
 
-  if (!Number.isInteger(chainId) || (!EXPLORER_BASE[chainId] && chainId !== 143)) {
-    res.status(400).json({ error: 'Unsupported chainId' });
-    return;
+    const tokens = balances
+      .filter(t => {
+        // Skip zero / 0x0 balances — alchemy returns dust as "0x0" sometimes.
+        if (!t?.contractAddress) return false;
+        if (!t.tokenBalance) return false;
+        // Treat any "0x" + only zeros as zero.
+        return /^0x0*$/.test(t.tokenBalance) === false;
+      })
+      .map(t => ({
+        address: t.contractAddress.toLowerCase(),
+        symbol: null,
+        name: null,
+        decimals: 18,
+        value: t.tokenBalance,
+      }));
+
+    return { source: 'alchemy', count: tokens.length, tokens };
+  } catch {
+    clearTimeout(timer);
+    return null;
   }
-  if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
-    res.status(400).json({ error: 'Invalid address' });
-    return;
-  }
+}
 
-  // ─── Monad mainnet via Blockvision ───────────────────────────────
-  if (chainId === 143) {
-    const apiKey = process.env.BLOCKVISION_API_KEY;
-    if (!apiKey) {
-      res.status(200).json({
-        source: 'missing-key',
-        code: 'MISSING_BLOCKVISION_API_KEY',
-        count: 0,
-        tokens: [],
-      });
-      return;
-    }
-    try {
-      const url = `${BLOCKVISION_BASE}/v2/monad/account/tokens?address=${address}`;
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 10_000);
-      const r = await fetch(url, {
-        headers: { accept: 'application/json', 'x-api-key': apiKey },
-        signal: controller.signal,
-      });
-      clearTimeout(timer);
-      if (!r.ok) {
-        res.status(200).json({ source: 'blockvision-error', status: r.status, count: 0, tokens: [] });
-        return;
-      }
-      const raw = await readJsonWithLimit(r, MAX_RESPONSE_BYTES);
-      const items = Array.isArray(raw?.result) ? raw.result
-                  : Array.isArray(raw?.result?.data) ? raw.result.data
-                  : [];
-      const tokens = items.map(it => {
-        const addr = typeof it.contractAddress === 'string' ? it.contractAddress.toLowerCase() : null;
-        if (!addr || !/^0x[a-fA-F0-9]{40}$/.test(addr)) return null;
-        if (addr === '0x0000000000000000000000000000000000000000') return null;
-        const dec = typeof it.decimal !== 'undefined' ? it.decimal : it.decimals;
-        return {
-          address: addr,
-          symbol: typeof it.symbol === 'string' ? it.symbol : null,
-          name: typeof it.name === 'string' ? it.name : null,
-          decimals: dec ? Number(dec) : 18,
-          value: typeof it.balance === 'string' ? it.balance : '0',
-        };
-      }).filter(t => t !== null);
-      res.status(200).json({ source: 'blockvision', count: tokens.length, tokens });
-      return;
-    } catch (err) {
-      res.status(200).json({ source: 'blockvision-error', count: 0, tokens: [] });
-      return;
-    }
+async function tryBlockvision(address) {
+  const apiKey = process.env.BLOCKVISION_API_KEY;
+  if (!apiKey) return null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10_000);
+  try {
+    const r = await fetch(`${BLOCKVISION_BASE}/v2/monad/account/tokens?address=${address}`, {
+      headers: { accept: 'application/json', 'x-api-key': apiKey },
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!r.ok) return null;
+    const raw = await readJsonWithLimit(r, MAX_RESPONSE_BYTES);
+    const items = Array.isArray(raw?.result) ? raw.result
+                : Array.isArray(raw?.result?.data) ? raw.result.data
+                : [];
+    const tokens = items.map(it => {
+      const addr = typeof it.contractAddress === 'string' ? it.contractAddress.toLowerCase() : null;
+      if (!addr || !/^0x[a-fA-F0-9]{40}$/.test(addr)) return null;
+      if (addr === '0x0000000000000000000000000000000000000000') return null;
+      const dec = typeof it.decimal !== 'undefined' ? it.decimal : it.decimals;
+      return {
+        address: addr,
+        symbol: typeof it.symbol === 'string' ? it.symbol : null,
+        name: typeof it.name === 'string' ? it.name : null,
+        decimals: dec ? Number(dec) : 18,
+        value: typeof it.balance === 'string' ? it.balance : '0',
+      };
+    }).filter(t => t !== null);
+    return { source: 'blockvision', count: tokens.length, tokens };
+  } catch {
+    clearTimeout(timer);
+    return null;
   }
+}
 
-  // ─── Blockscout-based chains ─────────────────────────────────────
-  const base = EXPLORER_BASE[chainId];
+async function tryBlockscout(chainId, address) {
+  const base = BLOCKSCOUT_BASE[chainId];
+  if (!base) return null;
   const candidates = [
     `${base}/api/v2/addresses/${address}/token-balances?type=ERC-20`,
     `${base}/api/v2/addresses/${address}/tokens?type=ERC-20`,
   ];
-
   for (const url of candidates) {
     try {
       const controller = new AbortController();
@@ -136,9 +166,7 @@ export default async function handler(req, res) {
       const cl = r.headers.get('content-length');
       if (cl !== null && Number(cl) > MAX_RESPONSE_BYTES) continue;
       const raw = await readJsonWithLimit(r, MAX_RESPONSE_BYTES);
-      const items = Array.isArray(raw) ? raw
-                  : Array.isArray(raw?.items) ? raw.items
-                  : [];
+      const items = Array.isArray(raw) ? raw : Array.isArray(raw?.items) ? raw.items : [];
       const tokens = items.map(it => {
         const tok = it?.token;
         const addr = tok?.address_hash ?? tok?.address;
@@ -153,10 +181,39 @@ export default async function handler(req, res) {
           value: typeof it.value === 'string' ? it.value : '0',
         };
       }).filter(t => t !== null);
-      res.status(200).json({ source: url, count: tokens.length, tokens });
-      return;
+      return { source: url, count: tokens.length, tokens };
     } catch { continue; }
   }
+  return null;
+}
 
-  res.status(200).json({ source: null, count: 0, tokens: [] });
+export default async function handler(req, res) {
+  applyCors(req, res);
+  if (req.method === 'OPTIONS') { res.status(200).end(); return; }
+  if (req.method !== 'GET') { res.status(405).json({ error: 'Method not allowed' }); return; }
+
+  const chainId = Number(req.query.chainId);
+  const address = String(req.query.address ?? '');
+
+  const supported = chainId in ALCHEMY_HOST || chainId in BLOCKSCOUT_BASE || chainId === 143;
+  if (!Number.isInteger(chainId) || !supported) {
+    res.status(400).json({ error: 'Unsupported chainId' });
+    return;
+  }
+  if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
+    res.status(400).json({ error: 'Invalid address' });
+    return;
+  }
+
+  // Provider chain: try Alchemy first, then chain-specific fallback
+  let result = await tryAlchemy(chainId, address);
+  if (!result) {
+    if (chainId === 143) result = await tryBlockvision(address);
+    else                 result = await tryBlockscout(chainId, address);
+  }
+  if (!result) {
+    res.status(200).json({ source: null, count: 0, tokens: [] });
+    return;
+  }
+  res.status(200).json(result);
 }
