@@ -9,6 +9,23 @@ const WEBHOOK_URL =
 
 const MONAD_EXPLORER = 'https://explorer.monad.xyz/tx';
 
+// Allowlist of origins permitted to call this API. Reflects only matching
+// origins back in Access-Control-Allow-Origin so CORS can never be wildcarded.
+const ALLOWED_ORIGINS = new Set([
+  'https://nadburn.xyz',
+  'https://www.nadburn.xyz',
+]);
+
+function applyCors(req, res) {
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.has(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+}
+
 async function notifyDiscord(item) {
   const raw = Number(item.amount) / Math.pow(10, item.tokenDecimals ?? 18);
   const amount = raw.toLocaleString('en-US', { maximumFractionDigits: 6 });
@@ -44,9 +61,7 @@ async function notifyDiscord(item) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  applyCors(req, res);
 
   if (req.method === 'OPTIONS') { res.status(200).end(); return; }
 
