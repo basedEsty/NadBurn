@@ -11,13 +11,25 @@ const TRADING_API_BASE =
   'https://trade-api.gateway.uniswap.org/v1';
 
 const ALLOWED_ENDPOINTS = new Set(['check_approval', 'quote', 'swap']);
+const ALLOWED_ORIGINS = new Set([
+  'https://nadburn.xyz',
+  'https://www.nadburn.xyz',
+]);
 const MAX_BODY_BYTES = 32 * 1024;
 const REQUEST_TIMEOUT_MS = 15_000;
 
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+function applyCors(req, res) {
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.has(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+}
+
+export default async function handler(req, res) {
+  applyCors(req, res);
 
   if (req.method === 'OPTIONS') { res.status(200).end(); return; }
   if (req.method !== 'POST') {
