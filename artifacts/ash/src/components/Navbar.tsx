@@ -10,9 +10,16 @@ export default function Navbar() {
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <Link
             href="/"
-            className="flex items-center gap-2 transition-opacity hover:opacity-80 shrink-0"
+            aria-label="Back to home"
+            title="Back to home"
+            className="group relative flex items-center gap-2 shrink-0 rounded-lg px-1.5 py-1 -mx-1.5 transition-all duration-200 hover:bg-white/5 hover:shadow-[0_0_24px_-4px_rgba(168,85,247,0.55)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
           >
-            <FireParticles size={28} count={8} />
+            {/* Subtle violet ring around the flame so it reads as a button, not just decoration */}
+            <span
+              aria-hidden
+              className="absolute left-1.5 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full ring-1 ring-primary/30 group-hover:ring-primary/70 transition-all duration-200"
+            />
+            <FireParticles size={36} count={12} />
             {/* Hide the wordmark on the smallest phones so the perf toggle
                 and connect-wallet button never get clipped. The flame logo
                 still anchors the brand. */}
