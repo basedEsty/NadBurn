@@ -12,14 +12,13 @@ export default function Navbar() {
             href="/"
             aria-label="Back to home"
             title="Back to home"
-            className="group relative flex items-center gap-2 shrink-0 rounded-lg px-1.5 py-1 -mx-1.5 transition-all duration-200 hover:bg-white/5 hover:shadow-[0_0_24px_-4px_rgba(168,85,247,0.55)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+            className="group relative flex items-center gap-2 shrink-0 rounded-lg transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
           >
-            {/* Subtle violet ring around the flame so it reads as a button, not just decoration */}
-            <span
-              aria-hidden
-              className="absolute left-1.5 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full ring-1 ring-primary/30 group-hover:ring-primary/70 transition-all duration-200"
-            />
-            <FireParticles size={36} count={12} />
+            {/* Brighter violet drop-shadow glow under the flame so the colors
+                read as vivid + interactive without needing an outlined ring. */}
+            <span className="drop-shadow-[0_0_10px_rgba(192,132,252,0.85)] group-hover:drop-shadow-[0_0_16px_rgba(216,180,254,1)] transition-all duration-200">
+              <FireParticles size={36} count={12} />
+            </span>
             {/* Hide the wordmark on the smallest phones so the perf toggle
                 and connect-wallet button never get clipped. The flame logo
                 still anchors the brand. */}
