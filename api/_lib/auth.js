@@ -2,11 +2,12 @@
  * Shared utilities for Vercel serverless functions:
  *   - Supabase REST client (uses service role key, server-side only)
  *   - Session cookie creation/verification (HMAC-signed, no JWT lib needed)
- *   - SIWE message construction (EIP-4361 standard)
+ *   - SIWE message construction (EIP-4361 standard, viem-strict compliant)
  *   - CORS helper
  */
 
 import crypto from 'node:crypto';
+import { getAddress } from 'viem';
 
 // ─────────────────────────────────────────────────────────────────────
 // CORS
@@ -61,7 +62,6 @@ export async function supabase(path, init = {}) {
 
 // ─────────────────────────────────────────────────────────────────────
 // Session cookies — HMAC-signed, HttpOnly
-// Format: base64url(JSON{addr,exp}).hmac
 // ─────────────────────────────────────────────────────────────────────
 const SESSION_COOKIE = 'nb_session';
 const SESSION_TTL_SEC = 60 * 60 * 24 * 14; // 14 days
@@ -125,15 +125,25 @@ export function readSession(req) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// SIWE message construction — EIP-4361 minimal compliant
+// SIWE message construction — EIP-4361 strict-compliant for viem 2.x
+//
+// Key requirements that previously broke wallets:
+//   1. Address MUST be EIP-55 checksum (mixed-case) — viem rejects lowercase
+//   2. Statement MUST be ASCII only — em dashes / smart quotes break parsers
+//   3. Exactly two newlines between address and statement, statement and URI
 // ─────────────────────────────────────────────────────────────────────
 export function buildSiweMessage({ address, nonce, chainId, domain = 'nadburn.xyz', uri = 'https://nadburn.xyz' }) {
+  // Checksum the address — viem will refuse to display a SIWE message with
+  // a lowercase address ("invalid formatting").
+  const checksummed = getAddress(address);
   const issuedAt = new Date().toISOString();
+  const statement = 'Sign in to nadburn.xyz - this is gasless and free.'; // ASCII only
+
   return [
     `${domain} wants you to sign in with your Ethereum account:`,
-    address,
+    checksummed,
     '',
-    'Sign in to nadburn.xyz — this is gasless and free.',
+    statement,
     '',
     `URI: ${uri}`,
     `Version: 1`,
