@@ -3,6 +3,8 @@ import { useAuth } from "@workspace/replit-auth-web";
 import { api, type BurnHistoryItem } from "@/lib/api";
 import { ExternalLink, History, Coins, Flame, Image as ImageIcon } from "lucide-react";
 import { formatUnits } from "viem";
+import { resolveTokenLogo } from "@/lib/token-logos";
+import { TokenLogo } from "@/components/TokenMark";
 
 const EXPLORERS: Record<number, string> = {
   10143: "https://testnet.monadexplorer.com/tx/",
@@ -47,6 +49,18 @@ function HistoryRow({ item }: { item: BurnHistoryItem }) {
             <Flame className="w-4 h-4" />
           )}
         </div>
+        {/* Per-token logo for fungible rows. NFT rows already show a
+            collection-level NFT image elsewhere in the burner UI; here
+            we only have an address, not an image, so we keep the icon
+            tile above as the visual marker for NFT history rows. */}
+        {!isNft && (
+          <TokenLogo
+            src={resolveTokenLogo(item.chainId, item.tokenAddress)}
+            symbol={item.tokenSymbol}
+            size={24}
+            className="shrink-0"
+          />
+        )}
         <div className="min-w-0">
           {isNft ? (
             <div className="text-sm text-white truncate">

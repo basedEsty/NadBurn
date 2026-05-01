@@ -13,6 +13,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertTriangle, Flame, Coins, Skull } from "lucide-react";
+import { resolveTokenLogo } from "@/lib/token-logos";
+import { TokenLogo } from "@/components/TokenMark";
 
 const BURN_ADDRESS = "0x000000000000000000000000000000000000dEaD";
 
@@ -30,6 +32,8 @@ export interface ConfirmBurnDialogProps {
   onOpenChange: (open: boolean) => void;
   mode: "burn" | "recover";
   nativeSymbol: string;
+  /** Active chain ID — used to look up the right per-chain token logo. */
+  chainId: number;
   feeWei: bigint;
   willChargeFee: boolean;
   tokens: ConfirmTokenLine[];
@@ -54,6 +58,7 @@ export function ConfirmBurnDialog({
   onOpenChange,
   mode,
   nativeSymbol,
+  chainId,
   feeWei,
   willChargeFee,
   tokens,
@@ -147,6 +152,12 @@ export function ConfirmBurnDialog({
                   ) : (
                     <Flame className="w-4 h-4 text-primary shrink-0" />
                   )}
+                  <TokenLogo
+                    src={resolveTokenLogo(chainId, t.address)}
+                    symbol={t.symbol}
+                    size={20}
+                    className="shrink-0"
+                  />
                   <span className="text-white truncate">{t.symbol}</span>
                 </div>
                 <div className="text-right font-mono text-xs">

@@ -47,20 +47,13 @@ import { ConfirmBurnDialog, type ConfirmTokenLine } from "@/components/ConfirmBu
 import { NftBurner } from "@/components/NftBurner";
 import { api } from "@/lib/api";
 import { apiUrl } from "@/lib/api-base";
-import { getTokenLogo, fallbackTokenLogo } from "@/lib/token-logos";
+import { resolveTokenLogo, primeTokenLogos } from "@/lib/token-logos";
+import { TokenLogo } from "@/components/TokenMark";
 
-// Resolves a token logo. Uses Uniswap's official default token list (cached
-// from tokens.uniswap.org), with deterministic dicebear fallback for tokens
-// the list doesn't know about.
-function getTokenLogoUrl(chainId: number, address: string): string {
-  if (address === "native") {
-    // Native gas tokens use a chain-keyed seed so MON / ETH have distinct icons
-    return `https://api.dicebear.com/7.x/shapes/svg?seed=native-${chainId}&backgroundColor=7c3aed`;
-  }
-  const fromUniswap = getTokenLogo(chainId, address);
-  if (fromUniswap) return fromUniswap;
-  return fallbackTokenLogo(address);
-}
+// Kick off the Uniswap + CoinGecko list fetch on module load so logos
+// are ready by the time the user opens the token list. Safe to call
+// multiple times — `primeTokenLogos` deduplicates the in-flight fetch.
+void primeTokenLogos();
 
 interface TokenBalance {
   address: `0x${string}` | "native";
@@ -1636,7 +1629,12 @@ export default function BurnerApp() {
                             checked={isSelected}
                             onCheckedChange={() => toggleSelection(token.address)}
                           />
-<div>
+                          <TokenLogo
+                            src={resolveTokenLogo(chainId, token.address)}
+                            symbol={token.symbol}
+                            size={32}
+                          />
+                          <div>
                             <p className="font-medium text-white">{token.symbol}</p>
                             <p className="text-xs text-muted-foreground">{token.name}</p>
                           </div>
@@ -1863,6 +1861,7 @@ export default function BurnerApp() {
             onOpenChange={setConfirmOpen}
             mode={mode}
             nativeSymbol={nativeSymbol ?? "native"}
+            chainId={chainId}
             feeWei={recoveryFeeWei}
             willChargeFee={willChargeFee}
             tokens={confirmTokens}
