@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useDiscordLink } from "@/hooks/useDiscordLink";
+import { DiscordIcon } from "./icons/DiscordIcon";
 import { Wallet, LogOut, Globe, Loader2 } from "lucide-react";
 
 export default function ConnectWallet() {
@@ -160,10 +161,3 @@ export default function ConnectWallet() {
   );
 }
 
-function DiscordIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
-      <path d="M19.27 5.33C17.94 4.71 16.5 4.26 15 4a.09.09 0 00-.07.03c-.18.33-.39.76-.53 1.09a16.09 16.09 0 00-4.8 0c-.14-.34-.35-.76-.54-1.09-.01-.02-.04-.03-.07-.03-1.5.26-2.93.71-4.27 1.33a.06.06 0 00-.03.02C1.01 9.36.27 13.27.64 17.13a.07.07 0 00.03.05c1.81 1.33 3.55 2.13 5.27 2.66a.07.07 0 00.07-.02 11 11 0 00.94-1.53.07.07 0 00-.04-.1c-.5-.19-.99-.42-1.45-.68-.05-.03-.05-.1-.01-.13.1-.07.2-.15.29-.22a.07.07 0 01.07-.01c3.04 1.39 6.34 1.39 9.34 0a.07.07 0 01.07.01c.1.08.2.15.29.22.05.03.04.1-.01.13-.46.27-.94.49-1.45.68a.07.07 0 00-.04.1c.27.5.59 1.03.94 1.53a.07.07 0 00.07.02c1.73-.53 3.46-1.33 5.27-2.66a.07.07 0 00.03-.05c.45-4.46-.74-8.34-3.13-11.78a.06.06 0 00-.03-.02zM8.52 14.81c-1.04 0-1.9-.95-1.9-2.12 0-1.18.84-2.13 1.9-2.13 1.07 0 1.92.96 1.9 2.13 0 1.17-.85 2.12-1.9 2.12zm7.03 0c-1.04 0-1.9-.95-1.9-2.12 0-1.18.84-2.13 1.9-2.13 1.07 0 1.92.96 1.9 2.13 0 1.17-.84 2.12-1.9 2.12z" />
-    </svg>
-  );
-}
