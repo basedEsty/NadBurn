@@ -1455,31 +1455,33 @@ export default function BurnerApp() {
           </div>
         )}
 
-        {/* Asset toggle: ERC-20 tokens vs NFTs. Switching to NFTs swaps in
-            the dedicated NftBurner surface below (and hides the burn/recover
-            mode toggle, since recovery doesn't apply to NFTs). */}
-        <div className="flex p-1 rounded-xl bg-white/5 border border-white/10 max-w-sm mx-auto">
-          <button
-            onClick={() => setAssetMode("tokens")}
-            className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
-              assetMode === "tokens"
-                ? "bg-primary text-white shadow-[0_0_12px_rgba(168,85,247,0.4)]"
-                : "text-muted-foreground hover:text-white"
-            }`}
-          >
-            <Coins className="w-4 h-4" /> Tokens
-          </button>
-          <button
-            onClick={() => setAssetMode("nfts")}
-            className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
-              assetMode === "nfts"
-                ? "bg-primary text-white shadow-[0_0_12px_rgba(168,85,247,0.4)]"
-                : "text-muted-foreground hover:text-white"
-            }`}
-          >
-            <ImageIcon className="w-4 h-4" /> NFTs
-          </button>
-        </div>
+        {/* Asset toggle: ERC-20 tokens vs NFTs. Hidden on unsupported
+            chains since the burner doesn't operate there anyway — the
+            "switch network" banner above is the only meaningful action. */}
+        {isSupportedChain && (
+          <div className="flex p-1 rounded-xl bg-white/5 border border-white/10 max-w-sm mx-auto">
+            <button
+              onClick={() => setAssetMode("tokens")}
+              className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                assetMode === "tokens"
+                  ? "bg-primary text-white shadow-[0_0_12px_rgba(168,85,247,0.4)]"
+                  : "text-muted-foreground hover:text-white"
+              }`}
+            >
+              <Coins className="w-4 h-4" /> Tokens
+            </button>
+            <button
+              onClick={() => setAssetMode("nfts")}
+              className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                assetMode === "nfts"
+                  ? "bg-primary text-white shadow-[0_0_12px_rgba(168,85,247,0.4)]"
+                  : "text-muted-foreground hover:text-white"
+              }`}
+            >
+              <ImageIcon className="w-4 h-4" /> NFTs
+            </button>
+          </div>
+        )}
 
         {assetMode === "nfts" ? (
           <NftBurner chainId={chainId} isSupportedChain={isSupportedChain} />
