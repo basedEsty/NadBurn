@@ -42,20 +42,18 @@ import {
 import { useSwitchChain } from "wagmi";
 import { FireParticles } from "@/components/FireParticles";
 import { BurnProgress, type ProgressStep } from "@/components/BurnProgress";
-import { SignInButton } from "@/components/SignInButton";
 import HistoryPanel from "@/components/HistoryPanel";
 import { ConfirmBurnDialog, type ConfirmTokenLine } from "@/components/ConfirmBurnDialog";
 import { api } from "@/lib/api";
 import { apiUrl } from "@/lib/api-base";
-import { getTokenLogo, getNativeLogo, fallbackTokenLogo } from "@/lib/token-logos";
+import { getTokenLogo, fallbackTokenLogo } from "@/lib/token-logos";
 
 // Resolves a token logo. Uses Uniswap's official default token list (cached
 // from tokens.uniswap.org), with deterministic dicebear fallback for tokens
 // the list doesn't know about.
 function getTokenLogoUrl(chainId: number, address: string): string {
   if (address === "native") {
-    const native = getNativeLogo(chainId);
-    if (native) return native;
+    // Native gas tokens use a chain-keyed seed so MON / ETH have distinct icons
     return `https://api.dicebear.com/7.x/shapes/svg?seed=native-${chainId}&backgroundColor=7c3aed`;
   }
   const fromUniswap = getTokenLogo(chainId, address);
@@ -1401,9 +1399,6 @@ export default function BurnerApp() {
             scan your wallet, pick the nads, then burn them or recover what's
             worth saving.
           </p>
-          <div className="flex justify-center pt-2">
-            <SignInButton />
-          </div>
         </div>
 
         {/* Unsupported-chain banner. We block all on-chain actions until the
