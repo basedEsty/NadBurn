@@ -42,6 +42,7 @@ import {
 import { useSwitchChain } from "wagmi";
 import { FireParticles } from "@/components/FireParticles";
 import { BurnProgress, type ProgressStep } from "@/components/BurnProgress";
+import { SignInButton } from "@/components/SignInButton";
 import HistoryPanel from "@/components/HistoryPanel";
 import { ConfirmBurnDialog, type ConfirmTokenLine } from "@/components/ConfirmBurnDialog";
 import { api } from "@/lib/api";
@@ -1399,6 +1400,9 @@ export default function BurnerApp() {
             scan your wallet, pick the nads, then burn them or recover what's
             worth saving.
           </p>
+          <div className="flex justify-center pt-2">
+            <SignInButton />
+          </div>
         </div>
 
         {/* Unsupported-chain banner. We block all on-chain actions until the
@@ -1578,17 +1582,7 @@ export default function BurnerApp() {
                             checked={isSelected}
                             onCheckedChange={() => toggleSelection(token.address)}
                           />
-                          <img
-                            src={getTokenLogoUrl(chainId, token.address as string)}
-                            alt={token.symbol}
-                            className="w-8 h-8 rounded-full bg-white/5 shrink-0 object-cover"
-                            onError={(e) => {
-                              const img = e.currentTarget;
-                              const fallback = `https://api.dicebear.com/7.x/shapes/svg?seed=${token.address}&backgroundColor=7c3aed,a855f7,ec4899`;
-                              if (img.src !== fallback) img.src = fallback;
-                            }}
-                          />
-                          <div>
+<div>
                             <p className="font-medium text-white">{token.symbol}</p>
                             <p className="text-xs text-muted-foreground">{token.name}</p>
                           </div>
