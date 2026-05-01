@@ -867,6 +867,27 @@ export default function BurnerApp() {
     return total;
   }, [quotes, selectedTokens, mode]);
 
+  // Display string for the Est. Recovery pill: 2-decimal cap, with compact
+  // notation kicking in at 10K so the value always fits one line. The
+  // tooltip carries the precise number for users who care.
+  const { recoveryEstimateDisplay, recoveryEstimateTooltip } = useMemo(() => {
+    if (mode !== "recover") {
+      return { recoveryEstimateDisplay: "—", recoveryEstimateTooltip: "" };
+    }
+    const value = Number(formatUnits(totalRecoveryEstimate, 18));
+    const display =
+      value >= 10_000
+        ? value.toLocaleString(undefined, {
+            notation: "compact",
+            maximumFractionDigits: 2,
+          })
+        : value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    const tooltip = value.toLocaleString(undefined, {
+      maximumFractionDigits: 6,
+    });
+    return { recoveryEstimateDisplay: display, recoveryEstimateTooltip: tooltip };
+  }, [mode, totalRecoveryEstimate]);
+
   const { writeContractAsync, isPending: isWritingContract } = useWriteContract();
   const { sendTransactionAsync, isPending: isSendingTx } = useSendTransaction();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -1822,43 +1843,20 @@ export default function BurnerApp() {
           <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto">
             <div className="p-4 rounded-xl bg-black/40 border border-white/5 text-center min-w-0">
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Selected</p>
-              <p className="text-2xl font-bold text-white">{selectedTokens.size}</p>
+              <p className="text-xl sm:text-2xl font-bold text-white whitespace-nowrap">
+                {selectedTokens.size}
+              </p>
             </div>
             <div className="p-4 rounded-xl bg-black/40 border border-white/5 text-center min-w-0">
               <p className="text-xs text-muted-foreground uppercase tracking-wider">
                 Est. Recovery
               </p>
-              {(() => {
-                if (mode !== "recover") {
-                  return <p className="text-2xl font-bold text-primary">—</p>;
-                }
-                // Cap to 2 decimals so the third+ digit past the decimal
-                // never renders. For very large totals, fall back to
-                // compact notation (`1.23M`) so the number always fits the
-                // pill on one line at any viewport width. The full-precision
-                // value goes in `title` so users who care can still see it.
-                const value = Number(formatUnits(totalRecoveryEstimate, 18));
-                const fullPrecision = value.toLocaleString(undefined, {
-                  maximumFractionDigits: 6,
-                });
-                const display =
-                  value >= 10_000
-                    ? value.toLocaleString(undefined, {
-                        notation: "compact",
-                        maximumFractionDigits: 2,
-                      })
-                    : value.toLocaleString(undefined, {
-                        maximumFractionDigits: 2,
-                      });
-                return (
-                  <p
-                    className="text-xl sm:text-2xl font-bold text-primary truncate"
-                    title={fullPrecision}
-                  >
-                    {display}
-                  </p>
-                );
-              })()}
+              <p
+                className="text-xl sm:text-2xl font-bold text-primary whitespace-nowrap"
+                title={recoveryEstimateTooltip}
+              >
+                {recoveryEstimateDisplay}
+              </p>
             </div>
           </div>
 
