@@ -6,6 +6,7 @@ import { formatUnits } from "viem";
 
 const EXPLORERS: Record<number, string> = {
   10143: "https://testnet.monadexplorer.com/tx/",
+  143: "https://monadexplorer.com/tx/",
   1: "https://etherscan.io/tx/",
 };
 

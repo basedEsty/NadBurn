@@ -164,9 +164,12 @@ recovery / marketplace path.
   `{ source, count, nfts: [{ contractAddress, tokenId, type:'erc721'|'erc1155',
                              balance, name?, collectionName?, imageUrl? }] }`.
 - Same caching (15s), 10s timeout, 1 MiB body cap, and SSRF guard as the
-  fungible scanner. Hard cap of 500 NFTs per response to keep the grid
-  responsive on whales. `ipfs://` and `ar://` URIs are rewritten to
-  `https://ipfs.io/ipfs/` and `https://arweave.net/` on the way out.
+  fungible scanner. Both providers are paginated until exhausted; a 5000-
+  NFT / 50-page safety ceiling guards against malformed indexer cursors
+  but is not a product cap. Blockscout queries both `/nft` and `/tokens`
+  and merges results deduped by `contract+tokenId`. `ipfs://` and `ar://`
+  URIs are rewritten to `https://ipfs.io/ipfs/` and `https://arweave.net/`
+  on the way out.
 
 **Burn UX:** A "Tokens / NFTs" segmented toggle on the Incinerator page
 swaps the discovery surface for a `<NftBurner />` (lives in
