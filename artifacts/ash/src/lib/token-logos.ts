@@ -76,6 +76,30 @@ const NATIVE_LOGO_BY_CHAIN: Record<number, string> = {
 let logoMap: Map<string, string> | null = null;
 let inFlight: Promise<Map<string, string>> | null = null;
 
+// Bumped every time `logoMap` is replaced (cache hit, network completion).
+// Components subscribe via `useTokenLogosVersion()` so that rows render with
+// the neutral fallback first, then deterministically re-render with real
+// logos as soon as the lists hydrate — no waiting for an unrelated re-render
+// to happen to pick up the new map.
+let version = 0;
+const listeners = new Set<() => void>();
+
+function bumpVersion(): void {
+  version++;
+  for (const l of listeners) l();
+}
+
+export function subscribeTokenLogos(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+export function getTokenLogosVersion(): number {
+  return version;
+}
+
 function key(chainId: number, address: string): string {
   return `${chainId}:${address.toLowerCase()}`;
 }
@@ -136,6 +160,7 @@ async function ensureLoaded(): Promise<Map<string, string>> {
   const cached = readCache();
   if (cached) {
     logoMap = cached;
+    bumpVersion();
     return cached;
   }
   if (inFlight) return inFlight;
@@ -164,6 +189,7 @@ async function ensureLoaded(): Promise<Map<string, string>> {
       if (uniswap) mergeList(m, uniswap);
       writeCache(m);
       logoMap = m;
+      bumpVersion();
       return m;
     } finally {
       // Always clear so a transient failure doesn't pin a stuck rejected

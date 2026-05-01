@@ -47,7 +47,7 @@ import { ConfirmBurnDialog, type ConfirmTokenLine } from "@/components/ConfirmBu
 import { NftBurner } from "@/components/NftBurner";
 import { api } from "@/lib/api";
 import { apiUrl } from "@/lib/api-base";
-import { resolveTokenLogo, primeTokenLogos } from "@/lib/token-logos";
+import { primeTokenLogos } from "@/lib/token-logos";
 import { TokenLogo } from "@/components/TokenMark";
 
 // Kick off the Uniswap + CoinGecko list fetch on module load so logos
@@ -1630,7 +1630,8 @@ export default function BurnerApp() {
                             onCheckedChange={() => toggleSelection(token.address)}
                           />
                           <TokenLogo
-                            src={resolveTokenLogo(chainId, token.address)}
+                            chainId={chainId}
+                            address={token.address}
                             symbol={token.symbol}
                             size={32}
                           />

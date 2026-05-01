@@ -3,7 +3,6 @@ import { useAuth } from "@workspace/replit-auth-web";
 import { api, type BurnHistoryItem } from "@/lib/api";
 import { ExternalLink, History, Coins, Flame, Image as ImageIcon } from "lucide-react";
 import { formatUnits } from "viem";
-import { resolveTokenLogo } from "@/lib/token-logos";
 import { TokenLogo } from "@/components/TokenMark";
 
 const EXPLORERS: Record<number, string> = {
@@ -55,7 +54,8 @@ function HistoryRow({ item }: { item: BurnHistoryItem }) {
             tile above as the visual marker for NFT history rows. */}
         {!isNft && (
           <TokenLogo
-            src={resolveTokenLogo(item.chainId, item.tokenAddress)}
+            chainId={item.chainId}
+            address={item.tokenAddress}
             symbol={item.tokenSymbol}
             size={24}
             className="shrink-0"

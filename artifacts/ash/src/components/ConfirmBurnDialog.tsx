@@ -13,7 +13,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertTriangle, Flame, Coins, Skull } from "lucide-react";
-import { resolveTokenLogo } from "@/lib/token-logos";
 import { TokenLogo } from "@/components/TokenMark";
 
 const BURN_ADDRESS = "0x000000000000000000000000000000000000dEaD";
@@ -153,7 +152,8 @@ export function ConfirmBurnDialog({
                     <Flame className="w-4 h-4 text-primary shrink-0" />
                   )}
                   <TokenLogo
-                    src={resolveTokenLogo(chainId, t.address)}
+                    chainId={chainId}
+                    address={t.address}
                     symbol={t.symbol}
                     size={20}
                     className="shrink-0"

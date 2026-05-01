@@ -8,7 +8,27 @@
  * doesn't shift surrounding layout.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import {
+  resolveTokenLogo,
+  subscribeTokenLogos,
+  getTokenLogosVersion,
+} from "@/lib/token-logos";
+
+/**
+ * Subscribe to the token-logo registry version so any row using
+ * `<TokenLogo>` deterministically re-renders the moment the Uniswap +
+ * CoinGecko lists hydrate (cache hit or network completion). Without
+ * this, components show the neutral mark on cold cache until something
+ * unrelated triggers a re-render.
+ */
+function useTokenLogosVersion(): number {
+  return useSyncExternalStore(
+    subscribeTokenLogos,
+    getTokenLogosVersion,
+    () => 0, // SSR snapshot — no logos available pre-hydration
+  );
+}
 
 interface TokenMarkProps {
   symbol?: string | null;
@@ -38,26 +58,40 @@ export function TokenMark({ symbol, size = 32, className = "" }: TokenMarkProps)
 }
 
 /**
- * Convenience wrapper that picks `<img>` when a URL is available and
- * `<TokenMark>` otherwise. Keeps every render site on the same code path
- * so the fallback decision lives in exactly one place.
+ * Single render path for every token logo in the app — render `<img>`
+ * when Uniswap or CoinGecko returns a URL for `(chainId, address)`,
+ * otherwise render the neutral `<TokenMark>`. The component subscribes
+ * to logo-list hydration so rows automatically swap from mark → real
+ * image as soon as the lists load.
  *
- * If the hosted logo URL 404s or CORS-fails at render time, we swap to
+ * If the hosted URL 404s or CORS-fails at render time we also swap to
  * the neutral mark — the user always sees a glyph, never an empty circle.
  */
 interface TokenLogoProps {
-  src: string | null | undefined;
+  chainId: number;
+  /** ERC-20 address (`0x...`) or the literal `"native"` for the gas token. */
+  address: string;
   symbol?: string | null;
   size?: number;
   className?: string;
 }
 
-export function TokenLogo({ src, symbol, size = 32, className = "" }: TokenLogoProps) {
+export function TokenLogo({
+  chainId,
+  address,
+  symbol,
+  size = 32,
+  className = "",
+}: TokenLogoProps) {
+  // Triggers a re-render whenever the registry version bumps so the
+  // resolveTokenLogo() call below picks up newly-hydrated entries.
+  useTokenLogosVersion();
+  const src = resolveTokenLogo(chainId, address);
+
   const [errored, setErrored] = useState(false);
 
-  // Reset the error flag whenever the upstream URL changes (e.g. after
-  // primeTokenLogos() resolves and the same row re-renders with a real
-  // src) so a previously-broken image gets a fresh chance.
+  // Reset the error flag whenever the upstream URL changes so a
+  // previously-broken image gets a fresh chance after rehydration.
   useEffect(() => {
     setErrored(false);
   }, [src]);
