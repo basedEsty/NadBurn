@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
-import { useAccount } from "wagmi";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -8,52 +7,32 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { useWalletAuth } from "@/hooks/useWalletAuth";
-import { apiUrl } from "@/lib/api-base";
+import { useDiscordLink } from "@/hooks/useDiscordLink";
 import { Loader2, LogOut } from "lucide-react";
 
-interface DiscordStatus {
-  linked: boolean;
-  signedIn: boolean;
-  discordUserId?: string;
-  discordUsername?: string;
-}
-
 /**
- * Compact Discord status pill for the Navbar. Matches the chain + wallet
- * pill styling (`border-white/10 bg-white/5`).
+ * Compact Discord status pill for the desktop Navbar. Matches the chain +
+ * wallet pill styling (`border-white/10 bg-white/5`).
  *
  *   - Wallet not connected           → hidden
  *   - Connected, no Discord linked   → "Link Discord" outline button
  *   - Connected + linked             → "@username" with dropdown to unlink
  *
- * Reads `?discord=...` query params on mount to surface success/failure
- * toasts after the OAuth redirect lands back here.
+ * On mobile the parent (`Navbar`) hides this component via CSS — but it stays
+ * mounted so the `?discord=...` post-OAuth toast effect below still fires
+ * exactly once per page load regardless of viewport. The mobile equivalent
+ * controls live inside `ConnectWallet`'s wallet dropdown menu.
  */
 export default function DiscordPill() {
-  const { isConnected } = useAccount();
-  const { isAuthenticated, signIn } = useWalletAuth();
+  const { isConnected, status, busy, handleLink, handleUnlink, refreshStatus } =
+    useDiscordLink();
   const { toast } = useToast();
 
-  const [status, setStatus] = useState<DiscordStatus | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  const refreshStatus = useCallback(async () => {
-    try {
-      const r = await fetch(apiUrl("/api/auth/discord/status"), { credentials: "include" });
-      const data = (await r.json()) as DiscordStatus;
-      setStatus(data);
-    } catch {
-      setStatus(null);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isConnected) void refreshStatus();
-  }, [isConnected, isAuthenticated, refreshStatus]);
-
-  // Surface toast feedback when we come back from Discord OAuth, then
-  // strip the `?discord=...` param so a refresh doesn't re-toast.
+  // Surface toast feedback when we come back from Discord OAuth, then strip
+  // the `?discord=...` param so a refresh doesn't re-toast. This effect is
+  // intentionally kept here (not in the shared hook) because it must run
+  // only once per page load — DiscordPill is always mounted (just CSS-hidden
+  // on mobile), so this is the safe single home for it.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const result = params.get("discord");
@@ -77,34 +56,6 @@ export default function DiscordPill() {
     const cleaned = window.location.pathname + (params.toString() ? `?${params.toString()}` : "");
     window.history.replaceState(null, "", cleaned);
     void refreshStatus();
-  }, [toast, refreshStatus]);
-
-  const handleLink = useCallback(async () => {
-    setBusy(true);
-    try {
-      if (!isAuthenticated) await signIn();
-      window.location.href = apiUrl("/api/auth/discord/start");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Link failed";
-      toast({ title: "Couldn't start Discord link", description: msg, variant: "destructive" });
-      setBusy(false);
-    }
-  }, [isAuthenticated, signIn, toast]);
-
-  const handleUnlink = useCallback(async () => {
-    setBusy(true);
-    try {
-      await fetch(apiUrl("/api/auth/discord/status"), {
-        method: "DELETE",
-        credentials: "include",
-      });
-      toast({ title: "Discord unlinked" });
-      await refreshStatus();
-    } catch {
-      toast({ title: "Unlink failed", variant: "destructive" });
-    } finally {
-      setBusy(false);
-    }
   }, [toast, refreshStatus]);
 
   if (!isConnected) return null;

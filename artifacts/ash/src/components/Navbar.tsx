@@ -25,7 +25,15 @@ export default function Navbar() {
           <PerformanceMenu />
         </div>
         <div className="flex items-center gap-2 shrink-0 min-w-0">
-          <DiscordPill />
+          {/*
+            DiscordPill stays in the DOM on mobile (CSS-hidden) so its
+            post-OAuth `?discord=...` toast effect still fires exactly once
+            per page load. On phones the equivalent link/unlink controls
+            live inside the wallet pill's dropdown — see ConnectWallet.
+          */}
+          <div className="hidden sm:flex">
+            <DiscordPill />
+          </div>
           <ConnectWallet />
         </div>
       </div>
