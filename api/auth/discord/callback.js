@@ -1,8 +1,14 @@
 /**
  * GET /api/auth/discord/callback?code=...&state=...
- * Discord redirects users here after they authorize on Discord's side.
- * We exchange the code for an access token, fetch the user, and write a
- * `discord_links` row keyed to their authenticated wallet address.
+ *
+ * Discord redirects here after the user authorizes on Discord's side.
+ *   1. Verify state cookie matches (CSRF protection)
+ *   2. Verify SIWE session is present (so we know which wallet)
+ *   3. Exchange code → access token
+ *   4. Fetch user identity from Discord
+ *   5. Persist link to Supabase
+ *   6. PUT the "Web3 Linked" role on the user in our guild
+ *   7. Redirect back with ?discord=linked
  */
 
 import { readSession, supabase } from '../../_lib/auth.js';
@@ -20,20 +26,45 @@ function redirectTo(res, target) {
   res.status(302).setHeader('Location', target).end();
 }
 
+/**
+ * Best-effort: PUT the verified role on the Discord member. Failures here
+ * shouldn't block the link itself — we still saved the row to Supabase, so
+ * the user can use the site. The role can be retried later from the bot.
+ */
+async function assignRole(discordUserId) {
+  const botToken = process.env.DISCORD_BOT_TOKEN;
+  const guildId  = process.env.DISCORD_GUILD_ID;
+  const roleId   = process.env.DISCORD_VERIFIED_ROLE_ID;
+  if (!botToken || !guildId || !roleId) return false;
+
+  try {
+    const url = `https://discord.com/api/v10/guilds/${guildId}/members/${discordUserId}/roles/${roleId}`;
+    const r = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        authorization: `Bot ${botToken}`,
+        'x-audit-log-reason': 'Wallet linked via nadburn.xyz',
+      },
+    });
+    if (!r.ok) {
+      const text = await r.text();
+      console.warn('Role assign returned', r.status, text.slice(0, 200));
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Role assign threw:', err.message);
+    return false;
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') { res.status(405).end(); return; }
 
   const { code, state, error } = req.query;
 
-  if (error) {
-    redirectTo(res, '/?discord=cancelled');
-    return;
-  }
-
-  if (!code || !state) {
-    redirectTo(res, '/?discord=missing-params');
-    return;
-  }
+  if (error)             { redirectTo(res, '/?discord=cancelled');     return; }
+  if (!code || !state)   { redirectTo(res, '/?discord=missing-params'); return; }
 
   const expectedState = readStateCookie(req);
   if (!expectedState || expectedState !== state) {
@@ -54,7 +85,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Exchange the authorization code for an access token
+  // Exchange auth code → access token
   let accessToken;
   try {
     const tokenResp = await fetch('https://discord.com/api/oauth2/token', {
@@ -70,19 +101,18 @@ export default async function handler(req, res) {
     });
     if (!tokenResp.ok) {
       const text = await tokenResp.text();
-      console.error('Discord token exchange failed:', tokenResp.status, text);
+      console.error('Token exchange failed:', tokenResp.status, text);
       redirectTo(res, '/?discord=token-exchange-failed');
       return;
     }
-    const tokenData = await tokenResp.json();
-    accessToken = tokenData.access_token;
+    accessToken = (await tokenResp.json()).access_token;
   } catch (err) {
-    console.error('Discord token exchange threw:', err.message);
+    console.error('Token exchange threw:', err.message);
     redirectTo(res, '/?discord=token-exchange-failed');
     return;
   }
 
-  // Fetch the user's Discord identity
+  // Fetch the user identity
   let discordUser;
   try {
     const userResp = await fetch('https://discord.com/api/users/@me', {
@@ -94,12 +124,12 @@ export default async function handler(req, res) {
     }
     discordUser = await userResp.json();
   } catch (err) {
-    console.error('Discord user fetch threw:', err.message);
+    console.error('User fetch threw:', err.message);
     redirectTo(res, '/?discord=user-fetch-failed');
     return;
   }
 
-  // Upsert the link in Supabase (wallet_address is the primary key)
+  // Persist the wallet ↔ discord link
   try {
     await supabase('/discord_links?on_conflict=wallet_address', {
       method: 'POST',
@@ -115,6 +145,9 @@ export default async function handler(req, res) {
     redirectTo(res, '/?discord=db-error');
     return;
   }
+
+  // Assign the verified role — best-effort, doesn't block on failure
+  await assignRole(String(discordUser.id));
 
   redirectTo(res, '/?discord=linked');
 }
