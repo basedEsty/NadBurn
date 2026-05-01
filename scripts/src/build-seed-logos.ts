@@ -26,7 +26,7 @@
  * checked into the repo; this script is not on the build hot path.
  */
 
-import { writeFile, mkdir } from "node:fs/promises";
+import { writeFile, mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -265,6 +265,62 @@ async function main(): Promise<void> {
   const flat: SeedEntry[] = [];
   for (const cid of Object.keys(PLATFORM_BY_CHAIN).map(Number)) {
     flat.push(...(perChain.get(cid) ?? []));
+  }
+
+  // Safety net: if we managed to fetch *something* but the result is
+  // clearly degraded compared to the file already on disk (CoinGecko
+  // partial outage, half the per-platform lists 404'd, etc.), bail out
+  // hard rather than silently overwrite the checked-in seed with a
+  // worse version. The scheduled regeneration job (.github/workflows/
+  // refresh-seed-logos.yml) will turn red so a human can investigate.
+  // Use REFRESH_FORCE=1 to override (e.g. for an intentional shrink).
+  const force = process.env.REFRESH_FORCE === "1";
+  let previous: SeedEntry[] | null = null;
+  try {
+    previous = JSON.parse(await readFile(OUTPUT_PATH, "utf8")) as SeedEntry[];
+  } catch {
+    // No existing file — first run, nothing to compare against.
+  }
+  if (flat.length === 0) {
+    throw new Error(
+      "Refusing to write seed-logos.json: produced 0 entries. " +
+        "CoinGecko likely failed; existing file left untouched.",
+    );
+  }
+  if (previous && previous.length > 0 && !force) {
+    // Per-chain check — the most common degraded outcome is "one
+    // platform's all.json 404'd", which would zero out a whole chain.
+    const prevByChain = new Map<number, number>();
+    for (const e of previous) {
+      prevByChain.set(e.chainId, (prevByChain.get(e.chainId) ?? 0) + 1);
+    }
+    const newByChain = new Map<number, number>();
+    for (const e of flat) {
+      newByChain.set(e.chainId, (newByChain.get(e.chainId) ?? 0) + 1);
+    }
+    for (const [chainId, prevCount] of prevByChain) {
+      if (prevCount === 0) continue;
+      const newCount = newByChain.get(chainId) ?? 0;
+      // Allow modest churn (tokens move in and out of the top 250) but
+      // a >30% drop on any chain is almost certainly a partial fetch
+      // failure, not a real ranking change.
+      if (newCount < prevCount * 0.7) {
+        throw new Error(
+          `Refusing to write seed-logos.json: chain ${chainId} shrank from ` +
+            `${prevCount} to ${newCount} entries (>30% drop). ` +
+            "Likely a partial CoinGecko outage. " +
+            "Re-run later, or set REFRESH_FORCE=1 to override.",
+        );
+      }
+    }
+    if (flat.length < previous.length * 0.7) {
+      throw new Error(
+        `Refusing to write seed-logos.json: total shrank from ` +
+          `${previous.length} to ${flat.length} entries (>30% drop). ` +
+          "Likely a CoinGecko outage. " +
+          "Re-run later, or set REFRESH_FORCE=1 to override.",
+      );
+    }
   }
 
   await mkdir(path.dirname(OUTPUT_PATH), { recursive: true });
