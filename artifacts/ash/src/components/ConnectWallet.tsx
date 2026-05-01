@@ -31,11 +31,7 @@ export default function ConnectWallet() {
   if (isConnected && address) {
     return (
       <div className="flex items-center gap-2">
-        {/*
-          Chain switcher pill — visible only on `sm+`. On mobile it's
-          collapsed into the wallet dropdown below so the header reduces
-          to a single pill on the right.
-        */}
+        {/* Chain pill — desktop only; collapsed into the wallet dropdown on mobile. */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -68,12 +64,7 @@ export default function ConnectWallet() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56 bg-card border-white/10 text-white">
-            {/*
-              Mobile-only network switcher. The dedicated chain pill
-              above is hidden on `< sm`, so we surface the same chain
-              options here. Hidden on desktop where the chain pill
-              already covers it.
-            */}
+            {/* Mobile-only chain switcher. */}
             <DropdownMenuLabel className="sm:hidden flex items-center gap-2 text-xs font-normal text-muted-foreground">
               <Globe className="h-3 w-3 text-primary" />
               <span className="truncate">
@@ -94,12 +85,7 @@ export default function ConnectWallet() {
             ))}
             <DropdownMenuSeparator className="sm:hidden bg-white/10" />
 
-            {/*
-              Mobile-only Discord controls. On desktop these are hidden
-              because the dedicated `<DiscordPill />` in the navbar covers
-              the same actions. Keeping them inside the wallet dropdown
-              de-clutters the mobile header to a single pill.
-            */}
+            {/* Mobile-only Discord controls (desktop has the standalone DiscordPill). */}
             {discordStatus?.linked ? (
               <>
                 <DropdownMenuLabel className="sm:hidden flex items-center gap-2 text-xs font-normal text-muted-foreground">
