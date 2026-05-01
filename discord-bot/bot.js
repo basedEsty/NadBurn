@@ -2,12 +2,13 @@ import 'dotenv/config';
 import { Client, GatewayIntentBits, EmbedBuilder, Events, ChannelType } from 'discord.js';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 
-const TOKEN            = process.env.DISCORD_BOT_TOKEN;
-const GUILD_ID         = '1446101090717270069';
-const BURNS_CHANNEL    = '1497404621142888539';
-const GENERAL_CHANNEL  = '1446101092906827790';
-const ANNOUNCE_CHANNEL = '1497404649219686481';
-const TEXT_CATEGORY    = '1446101092906827789'; // "Text Channels" category
+const TOKEN              = process.env.DISCORD_BOT_TOKEN;
+const GUILD_ID           = '1446101090717270069';
+const BURNS_CHANNEL      = '1497404621142888539';
+const GENERAL_CHANNEL    = '1446101092906827790';
+const ANNOUNCE_CHANNEL   = '1497404649219686481';
+const LEADERBOARD_CHANNEL = '1499626999445196972';
+const TEXT_CATEGORY      = '1446101092906827789';
 
 // ── Chess role IDs ──────────────────────────────────────────────
 const CHESS_ROLES = [
@@ -18,7 +19,6 @@ const CHESS_ROLES = [
   { id: '1497409691284934737', name: '♛ Queen',   minLevel: 21, maxLevel: 25 },
   { id: '1497409695273586698', name: '♚ King',    minLevel: 26, maxLevel: 30 },
 ];
-
 const CHESS_ROLE_IDS = new Set(CHESS_ROLES.map(r => r.id));
 
 function xpForLevel(n)    { return (n * (n + 1) / 2) * 100; }
@@ -26,11 +26,22 @@ function levelFromXP(xp)  { let l = 0; while (l < 30 && xp >= xpForLevel(l + 1))
 function roleForLevel(lvl){ if (lvl < 1) return null; return CHESS_ROLES.find(r => lvl >= r.minLevel && lvl <= r.maxLevel) ?? null; }
 
 const DATA_FILE = './levels.json';
+const LEADERBOARD_MSG_FILE = './leaderboard_msg.json';
+const LEADERBOARD_REFRESH_MS = 15 * 60_000; // 15 min
+
 function loadData() {
   if (!existsSync(DATA_FILE)) return {};
   try { return JSON.parse(readFileSync(DATA_FILE, 'utf8')); } catch { return {}; }
 }
 function saveData(d) { writeFileSync(DATA_FILE, JSON.stringify(d, null, 2)); }
+
+function loadLeaderboardMsgId() {
+  if (!existsSync(LEADERBOARD_MSG_FILE)) return null;
+  try { return JSON.parse(readFileSync(LEADERBOARD_MSG_FILE, 'utf8')).id ?? null; } catch { return null; }
+}
+function saveLeaderboardMsgId(id) {
+  writeFileSync(LEADERBOARD_MSG_FILE, JSON.stringify({ id, at: new Date().toISOString() }, null, 2));
+}
 
 if (!TOKEN) { console.error('❌  Set DISCORD_BOT_TOKEN env var'); process.exit(1); }
 
@@ -40,85 +51,86 @@ const client = new Client({
 
 const cooldowns = new Map();
 
+// ── Build the leaderboard embed from the level data ─────────────
+function buildLeaderboardEmbed() {
+  const data = loadData();
+  const sorted = Object.entries(data)
+    .filter(([, u]) => u.xp > 0)
+    .sort(([, a], [, b]) => b.xp - a.xp)
+    .slice(0, 10);
+
+  const description = sorted.length === 0
+    ? 'No one has earned XP yet — start chatting in #general to climb the board!'
+    : sorted.map(([, u], i) => {
+        const role = roleForLevel(u.level);
+        const medal = ['🥇', '🥈', '🥉'][i] ?? `**${i + 1}.**`;
+        return `${medal} **${u.username}** — Lvl ${u.level} • ${u.xp.toLocaleString()} XP ${role ? role.name : ''}`;
+      }).join('\n');
+
+  return new EmbedBuilder()
+    .setColor(0xff4500)
+    .setTitle('🏆 Mass Solutions Leaderboard')
+    .setURL('https://nadburn.xyz')
+    .setDescription(description)
+    .addFields({
+      name: 'How to climb',
+      value: 'Chat in any channel to earn XP (15-25 per message, 60s cooldown). Levels unlock chess piece roles ♟️ → ♞ → ♜ → ♝ → ♛ → ♚.',
+    })
+    .setFooter({ text: `nadburn.xyz • auto-refreshes every 15 min` })
+    .setTimestamp();
+}
+
+// ── Refresh the leaderboard message in #leaderboard ─────────────
+async function refreshLeaderboard() {
+  try {
+    const ch = await client.channels.fetch(LEADERBOARD_CHANNEL);
+    if (!ch) return;
+    const embed = buildLeaderboardEmbed();
+    let msgId = loadLeaderboardMsgId();
+
+    // Try to edit the existing message
+    if (msgId) {
+      try {
+        const msg = await ch.messages.fetch(msgId);
+        await msg.edit({ embeds: [embed] });
+        return;
+      } catch {
+        // Message was deleted — fall through to post a new one
+        msgId = null;
+      }
+    }
+    const sent = await ch.send({ embeds: [embed] });
+    saveLeaderboardMsgId(sent.id);
+    console.log(`🏆  Posted new leaderboard msg ${sent.id}`);
+  } catch (err) {
+    console.warn('Leaderboard refresh failed:', err.message);
+  }
+}
+
 client.once(Events.ClientReady, async c => {
   console.log(`✅  Logged in as ${c.user.tag}`);
 
-  let guild, channels;
+  // Initial channel cleanup (move feedback, lock channels — runs every start, idempotent)
   try {
-    guild    = await client.guilds.fetch(GUILD_ID);
-    channels = await guild.channels.fetch();
-  } catch (err) {
-    console.error('❌  Failed to fetch guild/channels:', err.message);
-    return;
-  }
-
-  // ── Channel setup ────────────────────────────────────────────
-  try {
-    const find = kw => channels.find(c => c && c.name.toLowerCase().includes(kw.toLowerCase()));
-
-    const feedback      = find('feedback');
-    const announcements = channels.get(ANNOUNCE_CHANNEL);
-    const instructions  = find('instruction');
-    const links         = find('links');
-
-    // Move feedback under Text Channels (hardcoded category ID)
-    if (feedback) {
-      await feedback.setParent(TEXT_CATEGORY, { lockPermissions: false });
-      console.log(`✅  Moved #${feedback.name} → Text Channels`);
-    }
-
-    // Lock: @everyone deny, bot allow
-    const botId  = c.user.id;
-    const toLock = [announcements, instructions, links].filter(Boolean);
-    for (const ch of toLock) {
-      await ch.permissionOverwrites.edit(guild.roles.everyone, { SendMessages: false });
-      await ch.permissionOverwrites.edit(botId, { SendMessages: true, ViewChannel: true });
-      console.log(`🔒  Locked #${ch.name}`);
+    const guild = await client.guilds.fetch(GUILD_ID);
+    const channels = await guild.channels.fetch();
+    const find = kw => channels.find(x => x && x.name.toLowerCase().includes(kw.toLowerCase()));
+    const feedback = find('feedback');
+    if (feedback && feedback.parentId !== TEXT_CATEGORY) {
+      await feedback.setParent(TEXT_CATEGORY, { lockPermissions: false }).catch(() => {});
     }
   } catch (err) {
-    console.error('❌  Channel setup error:', err.message);
+    console.warn('Channel setup error:', err.message);
   }
 
-  // ── Launch announcement (once) ───────────────────────────────
-  try {
-    const announceCh    = await client.channels.fetch(ANNOUNCE_CHANNEL);
-    const recent        = await announceCh.messages.fetch({ limit: 20 });
-    const alreadyPosted = recent.some(
-      m => m.author.id === c.user.id && m.embeds?.[0]?.title?.includes('Nadburn is Live')
-    );
-
-    if (alreadyPosted) {
-      console.log('ℹ️   Launch announcement already posted — skipping');
-    } else {
-      const embed = new EmbedBuilder()
-        .setColor(0xff4500)
-        .setTitle('🔥 Nadburn is Live')
-        .setDescription(
-          '**The app is now live and ready to burn!**\n\n' +
-          'Head over to [nadburn.xyz](https://nadburn.xyz) and start burning your tokens.\n\n' +
-          '**[🚀 Launch App → nadburn.xyz/app](https://nadburn.xyz/app)**'
-        )
-        .setThumbnail('https://nadburn.xyz/favicon.svg')
-        .addFields(
-          { name: '🌐 Website',   value: '[nadburn.xyz](https://nadburn.xyz)',          inline: true },
-          { name: '🚀 App',       value: '[nadburn.xyz/app](https://nadburn.xyz/app)',  inline: true },
-          { name: '💬 Community', value: '[Join Discord](https://discord.gg/sbUnEANQ)', inline: true },
-        )
-        .setFooter({ text: 'nadburn.xyz • burn it all' })
-        .setTimestamp();
-
-      await announceCh.send({ embeds: [embed] });
-      console.log('📢  Launch announcement posted to #announcements');
-    }
-  } catch (err) {
-    console.error('❌  Announcement error:', err.message);
-  }
+  // Initial leaderboard post + interval
+  await refreshLeaderboard();
+  setInterval(() => { void refreshLeaderboard(); }, LEADERBOARD_REFRESH_MS);
 });
 
 // ── XP on every message ─────────────────────────────────────────
 client.on(Events.MessageCreate, async message => {
   if (message.author.bot || !message.guild) return;
-
   const userId = message.author.id;
   const now    = Date.now();
   if (cooldowns.has(userId) && now - cooldowns.get(userId) < 60_000) return;
@@ -126,11 +138,9 @@ client.on(Events.MessageCreate, async message => {
 
   const data = loadData();
   if (!data[userId]) data[userId] = { xp: 0, level: 0, username: message.author.username };
-
   const xpGain = Math.floor(Math.random() * 11) + 15;
   data[userId].xp      += xpGain;
   data[userId].username = message.author.username;
-
   const oldLevel = data[userId].level;
   const newLevel = levelFromXP(data[userId].xp);
   data[userId].level = newLevel;
@@ -139,7 +149,6 @@ client.on(Events.MessageCreate, async message => {
   if (newLevel > oldLevel) {
     const newRole = roleForLevel(newLevel);
     const oldRole = roleForLevel(oldLevel);
-
     try {
       const member = message.member;
       for (const rid of CHESS_ROLE_IDS) {
@@ -197,18 +206,7 @@ client.on(Events.InteractionCreate, async interaction => {
       await interaction.editReply({ embeds: [embed] });
 
     } else if (commandName === 'leaderboard') {
-      const data   = loadData();
-      const sorted = Object.entries(data).sort(([, a], [, b]) => b.xp - a.xp).slice(0, 10);
-      if (sorted.length === 0) { await interaction.editReply('No one has earned XP yet.'); return; }
-      const medals = ['🥇', '🥈', '🥉'];
-      const lines  = sorted.map(([, u], i) => {
-        const role = roleForLevel(u.level);
-        return `${medals[i] ?? `${i + 1}.`} **${u.username}** — Lvl ${u.level} • ${u.xp.toLocaleString()} XP ${role ? role.name : ''}`;
-      });
-      const embed = new EmbedBuilder()
-        .setColor(0xff4500).setTitle('🏆 Leaderboard').setDescription(lines.join('\n'))
-        .setFooter({ text: 'nadburn.xyz • burn it all' }).setTimestamp();
-      await interaction.editReply({ embeds: [embed] });
+      await interaction.editReply({ embeds: [buildLeaderboardEmbed()] });
 
     } else if (commandName === 'burn-stats') {
       const channel  = await client.channels.fetch(BURNS_CHANNEL);
