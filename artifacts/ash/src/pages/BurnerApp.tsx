@@ -884,6 +884,16 @@ export default function BurnerApp() {
     setProgressOpen(false);
   }, [assetMode]);
 
+  // When the user switches to an unsupported chain, force assetMode back
+  // to "tokens" so we don't keep rendering the NftBurner surface under the
+  // switch-network banner. The token-mode UI is the historical default and
+  // is what the rest of the page assumes when no chain is connected.
+  useEffect(() => {
+    if (!isSupportedChain && assetMode !== "tokens") {
+      setAssetMode("tokens");
+    }
+  }, [isSupportedChain, assetMode]);
+
   const confirmTokens = useMemo<ConfirmTokenLine[]>(() => {
     return Array.from(selectedTokens)
       .map(
