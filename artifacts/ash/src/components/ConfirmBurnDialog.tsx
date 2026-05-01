@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertTriangle, Flame, Coins, Skull } from "lucide-react";
 import { TokenLogo } from "@/components/TokenMark";
+import { formatUsd, formatUsdAmount } from "@/lib/token-prices";
 
 const BURN_ADDRESS = "0x000000000000000000000000000000000000dEaD";
 
@@ -24,6 +25,8 @@ export interface ConfirmTokenLine {
   balance: bigint;
   willRecover: boolean;
   quote?: bigint;
+  /** Unit USD price from CoinGecko, or undefined when unpriced. */
+  usdPrice?: number;
 }
 
 export interface ConfirmBurnDialogProps {
@@ -74,6 +77,16 @@ export function ConfirmBurnDialog({
   const recoverCount = tokens.filter((t) => t.willRecover).length;
   const isRecover = mode === "recover" && recoverCount > 0;
   const matches = typed.trim().toUpperCase() === CONFIRM_PHRASE;
+
+  // Subtotal across every row that has a price. Hidden when nothing is
+  // priced so we never imply an authoritative "$0" total.
+  const usdSubtotal = tokens.reduce((acc, t) => {
+    if (typeof t.usdPrice !== "number") return acc;
+    const amount = Number(t.balance) / 10 ** t.decimals;
+    if (!Number.isFinite(amount)) return acc;
+    return acc + amount * t.usdPrice;
+  }, 0);
+  const anyPriced = tokens.some((t) => typeof t.usdPrice === "number");
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -164,6 +177,12 @@ export function ConfirmBurnDialog({
                   <div className="text-white/90">
                     {fmt(t.balance, t.decimals)} {t.symbol}
                   </div>
+                  {(() => {
+                    const usd = formatUsd(t.balance, t.decimals, t.usdPrice);
+                    return usd ? (
+                      <div className="text-muted-foreground">~{usd}</div>
+                    ) : null;
+                  })()}
                   {t.willRecover && t.quote && t.quote > 0n && (
                     <div className="text-emerald-300">
                       → ≈ {fmt(t.quote, 18)} {nativeSymbol}
@@ -173,6 +192,15 @@ export function ConfirmBurnDialog({
               </div>
             ))}
           </div>
+
+          {anyPriced && (
+            <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-sm flex items-center justify-between text-muted-foreground">
+              <span>USD value</span>
+              <span className="font-mono font-semibold text-white/90">
+                ≈ {formatUsdAmount(usdSubtotal)} total
+              </span>
+            </div>
+          )}
 
           {isRecover && (
             <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 text-sm text-emerald-200 flex items-center justify-between">

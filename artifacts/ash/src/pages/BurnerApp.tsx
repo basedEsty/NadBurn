@@ -48,6 +48,11 @@ import { NftBurner } from "@/components/NftBurner";
 import { api } from "@/lib/api";
 import { apiUrl } from "@/lib/api-base";
 import { primeTokenLogos } from "@/lib/token-logos";
+import {
+  useTokenPrices,
+  formatUsd,
+  getCachedTokenPrice,
+} from "@/lib/token-prices";
 import { TokenLogo } from "@/components/TokenMark";
 
 // Kick off the Uniswap + CoinGecko list fetch on module load so logos
@@ -867,6 +872,16 @@ export default function BurnerApp() {
     return total;
   }, [quotes, selectedTokens, mode]);
 
+  // USD prices for every discovered token (ERC-20 + native). Re-fetches
+  // when the wallet's token set or the active chain changes; tokens not
+  // priced by CoinGecko silently drop out of the result map and the row
+  // simply renders no USD line.
+  const priceAddresses = useMemo(
+    () => discoveredTokens.map((t) => t.address as string),
+    [discoveredTokens],
+  );
+  const { prices: tokenPrices } = useTokenPrices(chainId, priceAddresses);
+
   // Display string for the Est. Recovery pill: 2-decimal cap, with compact
   // notation kicking in at 10K so the value always fits one line. The
   // tooltip carries the precise number for users who care.
@@ -929,6 +944,14 @@ export default function BurnerApp() {
         const quote = t.address === "native" ? 0n : quotes[t.address as string] ?? 0n;
         const willRecover =
           mode === "recover" && recoveryAvailable && t.address !== "native" && quote > 0n;
+        // Pull the USD unit price out of the same in-memory cache the row
+        // hook populated. `getCachedTokenPrice` is sync and returns
+        // undefined when CoinGecko has no price — the dialog skips the
+        // USD line in that case rather than rendering `$0.00`.
+        const usdPrice =
+          chainId !== undefined
+            ? getCachedTokenPrice(chainId, t.address as string)
+            : undefined;
         return {
           address: t.address as string,
           symbol: t.symbol,
@@ -938,9 +961,10 @@ export default function BurnerApp() {
           balance: amountFor(t.address as string, t.balance),
           willRecover,
           quote,
+          usdPrice,
         };
       });
-  }, [selectedTokens, discoveredTokens, quotes, mode, recoveryAvailable]);
+  }, [selectedTokens, discoveredTokens, quotes, mode, recoveryAvailable, chainId, tokenPrices]);
 
   const updateStep = (id: string, patch: Partial<ProgressStep>) => {
     setProgressSteps((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
@@ -1674,6 +1698,23 @@ export default function BurnerApp() {
                             })}{" "}
                             {token.symbol}
                           </p>
+                          {(() => {
+                            // USD line goes right below the balance in the
+                            // same muted color as the existing secondary text
+                            // (token name on the left). Skipped entirely when
+                            // CoinGecko has no price for this contract — no
+                            // `$0.00` placeholders.
+                            const usd = formatUsd(
+                              token.balance,
+                              token.decimals,
+                              tokenPrices[(token.address as string).toLowerCase()],
+                            );
+                            return usd ? (
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                ~{usd}
+                              </p>
+                            ) : null;
+                          })()}
                           {showRecoverEstimate && isSelected && (
                             <p
                               className="text-xs text-primary mt-0.5"
