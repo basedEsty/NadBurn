@@ -64,7 +64,7 @@ export default function ConnectWallet() {
               {address.slice(0, 6)}...{address.slice(-4)}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 bg-card border-white/10 text-white">
+          <DropdownMenuContent align="end" className="w-56 sm:w-48 bg-card border-white/10 text-white">
             {/* Mobile-only chain switcher. */}
             <DropdownMenuLabel className="sm:hidden flex items-center gap-2 text-xs font-normal text-muted-foreground">
               <Globe className="h-3 w-3 text-primary" />
