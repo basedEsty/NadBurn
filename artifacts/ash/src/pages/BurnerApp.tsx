@@ -126,14 +126,14 @@ async function fetchWalletTokenAddresses(
 
 // Chains the app actually understands. Anything outside this list shows a
 // "switch network" banner because we have no DEX/explorer/burn wiring for it.
-// Monad testnet (10143) is included for the burn flow (tokens + NFTs); the
-// Recover-into-MON path on testnet has no DEX wiring so users on 10143 see
-// burn-only just like on Ethereum mainnet.
-const SUPPORTED_CHAIN_IDS = [143, 1, 10143] as const;
+// Monad testnet (10143) is intentionally NOT listed here on the live app —
+// see the comment on `monadTestnet` in `lib/wagmi.ts` for the re-enable
+// steps. Per-chain constants for 10143 are kept in `constants.ts` so
+// re-adding it here is the only change needed to bring it back.
+const SUPPORTED_CHAIN_IDS = [143, 1] as const;
 const SUPPORTED_CHAIN_LABELS: Record<number, string> = {
   1: "Ethereum",
   143: "Monad",
-  10143: "Monad Testnet",
 };
 
 // Native gas-token symbol per chain. Used in UI strings for the "Recover X"
@@ -142,7 +142,6 @@ const SUPPORTED_CHAIN_LABELS: Record<number, string> = {
 const NATIVE_SYMBOL: Record<number, string> = {
   1: "ETH",
   143: "MON",
-  10143: "MON",
 };
 
 export default function BurnerApp() {
@@ -622,6 +621,9 @@ export default function BurnerApp() {
   // Kick off a silent background scan as soon as the wallet connects or the
   // user switches networks, so the nads pile is already populated by the time
   // they look at it. The button stays available for manual re-scans.
+  // Skipped on unsupported chains since we have no DEX/RPC wiring there —
+  // firing reads would just produce noisy errors under the switch-network
+  // banner.
   useEffect(() => {
     if (!isConnected || !address) {
       // Reset detected tokens when the wallet disconnects so a stale list
@@ -629,8 +631,12 @@ export default function BurnerApp() {
       setAutoTokens([]);
       return;
     }
+    if (!isSupportedChain) {
+      setAutoTokens([]);
+      return;
+    }
     void handleAutoDetect(true);
-  }, [isConnected, address, chainId, handleAutoDetect]);
+  }, [isConnected, address, chainId, isSupportedChain, handleAutoDetect]);
 
   // Reset every selection-adjacent piece of state when the active wallet,
   // network, or connection status changes. Without this, a selection made
@@ -1488,7 +1494,7 @@ export default function BurnerApp() {
 
         {assetMode === "nfts" ? (
           <NftBurner chainId={chainId} isSupportedChain={isSupportedChain} />
-        ) : (
+        ) : isSupportedChain ? (
           <>
         {/* Mode toggle */}
         <div className="flex p-1 rounded-xl bg-white/5 border border-white/10 max-w-sm mx-auto">
@@ -1848,7 +1854,7 @@ export default function BurnerApp() {
           </Button>
         </div>
           </>
-        )}
+        ) : null}
       </div>
 
       {/* Token-flow dialogs only render in tokens mode. NftBurner owns its

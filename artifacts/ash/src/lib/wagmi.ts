@@ -67,9 +67,11 @@ export const monadMainnet = defineChain({
 });
 
 // Monad testnet — chain ID 10143. Backed by the official testnet RPC and
-// the testnet shard of Monad Explorer (Blockscout-compatible). Included so
-// users running on testnet can exercise the burn flow (tokens + NFTs) the
-// same way they would on mainnet.
+// the testnet shard of Monad Explorer (Blockscout-compatible). Definition
+// is kept exported so re-enabling the testnet later is a one-line change
+// (add it back to `wagmiConfig.chains` and the `transports` map below).
+// Currently NOT wired into the active config because the app is live and
+// real users shouldn't see a testnet entry in the network picker.
 export const monadTestnet = defineChain({
   id: 10143,
   name: "Monad Testnet",
@@ -151,8 +153,11 @@ if (WC_PROJECT_ID) {
 
 // Chain order matters — wagmi treats the first entry as the initial /
 // default chain when a wallet first connects. Monad mainnet leads.
+//
+// Monad testnet is intentionally omitted from the live network picker —
+// see the comment on `monadTestnet` above for the re-enable steps.
 export const wagmiConfig = createConfig({
-  chains: [monadMainnet, mainnet, monadTestnet],
+  chains: [monadMainnet, mainnet],
   connectors,
   transports: {
     // Prefer the user's RPC, but always keep the public endpoint as a backup
@@ -167,6 +172,5 @@ export const wagmiConfig = createConfig({
       ).map((url) => http(url)),
     ),
     [mainnet.id]: MAINNET_RPC ? fallback([http(MAINNET_RPC), http()]) : http(),
-    [monadTestnet.id]: http("https://testnet-rpc.monad.xyz"),
   },
 });

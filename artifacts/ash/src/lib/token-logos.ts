@@ -96,14 +96,14 @@ function coingeckoListUrl(platform: string): string {
 const STORAGE_KEY = "nb_token_logo_map_v3";
 const TTL_MS = 24 * 60 * 60 * 1000; // 24h
 
-// Native (gas) token logos by chain ID.
-// • Monad mainnet (143)  → official Monad Labs "M" mark
-// • Monad testnet (10143) → same brand
-// • Ethereum mainnet (1) → TrustWallet's ETH icon (canonical, used everywhere)
+// Native (gas) token logos by chain ID. Sourced from CoinGecko's official
+// per-coin image CDN so the native row uses the same canonical brand as
+// every ERC-20 we render. URLs verified live on 2026-05-01:
+// • Ethereum mainnet (1) → CoinGecko coin id `ethereum` (image #279)
+// • Monad mainnet (143)  → CoinGecko coin id `monad`    (image #38927)
 const NATIVE_LOGO_BY_CHAIN: Record<number, string> = {
-  1: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png",
-  143: "https://avatars.githubusercontent.com/u/142404652?s=200",
-  10143: "https://avatars.githubusercontent.com/u/142404652?s=200",
+  1: "https://coin-images.coingecko.com/coins/images/279/small/ethereum.png?1696501628",
+  143: "https://coin-images.coingecko.com/coins/images/38927/small/mon.png?1766029057",
 };
 
 // Map "chainId:lowercaseAddress" → logoURI.
