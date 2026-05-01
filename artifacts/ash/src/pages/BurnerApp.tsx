@@ -47,6 +47,24 @@ import { ConfirmBurnDialog, type ConfirmTokenLine } from "@/components/ConfirmBu
 import { api } from "@/lib/api";
 import { apiUrl } from "@/lib/api-base";
 
+// Returns a logo URL for a token. TrustWallet for chains it supports,
+// otherwise a deterministic identicon so every token has a recognizable image.
+function getTokenLogoUrl(chainId: number, address: string): string {
+  if (address === "native") {
+    if (chainId === 1) return "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png";
+    return `https://api.dicebear.com/7.x/shapes/svg?seed=native-${chainId}&backgroundColor=7c3aed`;
+  }
+  const TRUSTWALLET_CHAIN: Record<number, string> = {
+    1: "ethereum",
+  };
+  const slug = TRUSTWALLET_CHAIN[chainId];
+  const checksumish = address.toLowerCase();
+  if (slug) {
+    return `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${slug}/assets/${checksumish}/logo.png`;
+  }
+  return `https://api.dicebear.com/7.x/shapes/svg?seed=${checksumish}&backgroundColor=7c3aed,a855f7,ec4899`;
+}
+
 interface TokenBalance {
   address: `0x${string}` | "native";
   symbol: string;
@@ -971,7 +989,7 @@ export default function BurnerApp() {
           // tx below. Without this, the first token's signature request can
           // hit the wallet while the fee is still in mempool.
           await publicClient!.waitForTransactionReceipt({ hash: feeHash });
-          updateStep("fee", { status: "success", detail: `Tx: ${feeHash.slice(0, 14)}…` });
+          updateStep("fee", { status: "success", detail: `Tx: ${feeHash.slice(0, 14)}…`, txHash: feeHash });
         } catch (err: any) {
           updateStep("fee", {
             status: "failed",
@@ -1007,7 +1025,7 @@ export default function BurnerApp() {
             // first tx is in a block — this is what caused the "last token
             // in batch fails but works alone" reports.
             await publicClient!.waitForTransactionReceipt({ hash });
-            updateStep(burnId, { status: "success", detail: `Tx: ${hash.slice(0, 14)}…` });
+            updateStep(burnId, { status: "success", detail: `Tx: ${hash.slice(0, 14)}…`, txHash: hash });
             burned += 1;
             api
               .recordBurn({
@@ -1209,7 +1227,7 @@ export default function BurnerApp() {
                 args: [dex.router, maxUint256],
               });
               await publicClient!.waitForTransactionReceipt({ hash: approveHash });
-              updateStep(approveId, { status: "success", detail: `Tx: ${approveHash.slice(0, 14)}…` });
+              updateStep(approveId, { status: "success", detail: `Tx: ${approveHash.slice(0, 14)}…`, txHash: approveHash });
             } else {
               updateStep(approveId, { status: "success", detail: "Already approved" });
             }
@@ -1304,7 +1322,7 @@ export default function BurnerApp() {
               args: [BURN_ADDRESS, amt],
             });
             await publicClient!.waitForTransactionReceipt({ hash });
-            updateStep(burnId, { status: "success", detail: `Tx: ${hash.slice(0, 14)}…` });
+            updateStep(burnId, { status: "success", detail: `Tx: ${hash.slice(0, 14)}…`, txHash: hash });
             burned += 1;
             api
               .recordBurn({
@@ -1563,6 +1581,16 @@ export default function BurnerApp() {
                           <Checkbox
                             checked={isSelected}
                             onCheckedChange={() => toggleSelection(token.address)}
+                          />
+                          <img
+                            src={getTokenLogoUrl(chainId, token.address as string)}
+                            alt={token.symbol}
+                            className="w-8 h-8 rounded-full bg-white/5 shrink-0 object-cover"
+                            onError={(e) => {
+                              const img = e.currentTarget;
+                              const fallback = `https://api.dicebear.com/7.x/shapes/svg?seed=${token.address}&backgroundColor=7c3aed,a855f7,ec4899`;
+                              if (img.src !== fallback) img.src = fallback;
+                            }}
                           />
                           <div>
                             <p className="font-medium text-white">{token.symbol}</p>
