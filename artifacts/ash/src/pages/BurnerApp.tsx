@@ -42,7 +42,6 @@ import {
 import { useSwitchChain } from "wagmi";
 import { FireParticles } from "@/components/FireParticles";
 import { BurnProgress, type ProgressStep } from "@/components/BurnProgress";
-import { DiscordLinkCard } from "@/components/DiscordLinkCard";
 import HistoryPanel from "@/components/HistoryPanel";
 import { ConfirmBurnDialog, type ConfirmTokenLine } from "@/components/ConfirmBurnDialog";
 import { api } from "@/lib/api";
@@ -1400,7 +1399,6 @@ export default function BurnerApp() {
             scan your wallet, pick the nads, then burn them or recover what's
             worth saving.
           </p>
-          <DiscordLinkCard />
         </div>
 
         {/* Unsupported-chain banner. We block all on-chain actions until the
