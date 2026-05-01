@@ -1,0 +1,1022 @@
+[
+  {
+    "chainId": 1,
+    "address": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/7598/large/WBTCLOGO.png?1764496367",
+    "symbol": "WBTC"
+  },
+  {
+    "chainId": 1,
+    "address": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/2518/large/weth.png?1696503332",
+    "symbol": "WETH"
+  },
+  {
+    "chainId": 1,
+    "address": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/325/large/Tether.png?1696501661",
+    "symbol": "USDT"
+  },
+  {
+    "chainId": 1,
+    "address": "0xb8c77482e45f1f44de1745f52c74426c631bdd52",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/825/large/bnb-icon2_2x.png?1696501970",
+    "symbol": "BNB"
+  },
+  {
+    "chainId": 1,
+    "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/6319/large/USDC.png?1769615602",
+    "symbol": "USDC"
+  },
+  {
+    "chainId": 1,
+    "address": "0x925206b8a707096ed26ae47c84747fe0bb734f59",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/27045/large/wbt_token.png?1696526096",
+    "symbol": "WBT"
+  },
+  {
+    "chainId": 1,
+    "address": "0xdc035d45d973e3ec169d2276ddab16f1e407384f",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/39926/large/usds.webp?1726666683",
+    "symbol": "USDS"
+  },
+  {
+    "chainId": 1,
+    "address": "0x2af5d2ad76741191d15dfe7bf6ac92d4bd912ca3",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/8418/large/leo-token.png?1696508607",
+    "symbol": "LEO"
+  },
+  {
+    "chainId": 1,
+    "address": "0x514910771af9ca656af840dff83e8264ecf986ca",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/877/large/Chainlink_Logo_500.png?1760023405",
+    "symbol": "LINK"
+  },
+  {
+    "chainId": 1,
+    "address": "0x8d0d000ee44948fc98c9b98a4fa4921476f08b0d",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/54977/large/USD1_1000x1000_transparent.png?1749297002",
+    "symbol": "USD1"
+  },
+  {
+    "chainId": 1,
+    "address": "0x6b175474e89094c44da98b954eedeac495271d0f",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/9956/large/Badge_Dai.png?1696509996",
+    "symbol": "DAI"
+  },
+  {
+    "chainId": 1,
+    "address": "0x4c9edd5852cd905f086c759e8383e09bff1e68b3",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/33613/large/usde.png?1733810059",
+    "symbol": "USDE"
+  },
+  {
+    "chainId": 1,
+    "address": "0x95ad61b0a150d79219dcf64e1e6cc01f0b64c4ce",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/11939/large/shiba.png?1696511800",
+    "symbol": "SHIB"
+  },
+  {
+    "chainId": 1,
+    "address": "0x582d872a1b094fc48f5de31d3b73f2d9be47def1",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/17980/large/photo_2024-09-10_17.09.00.jpeg?1725963446",
+    "symbol": "TON"
+  },
+  {
+    "chainId": 1,
+    "address": "0x6c3ea9036406852006290770bedfcaba0e23a0e8",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/31212/large/PYUSD_Token_Logo_2x.png?1765987788",
+    "symbol": "PYUSD"
+  },
+  {
+    "chainId": 1,
+    "address": "0xa0b73e1ff0b80914ab6fe0444e65848c4c34450b",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/7310/large/cro_token_logo.png?1696507599",
+    "symbol": "CRO"
+  },
+  {
+    "chainId": 1,
+    "address": "0x136471a34f6ef19fe571effc1ca711fdb8e49f2b",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/51054/large/Hashnote_SDYC_200x200.png?1730370965",
+    "symbol": "USYC"
+  },
+  {
+    "chainId": 1,
+    "address": "0x68749665ff8d2d112fa859aa293f07a622782f38",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/10481/large/logo.png?1774627372",
+    "symbol": "XAUT"
+  },
+  {
+    "chainId": 1,
+    "address": "0xe343167631d89b6ffc58b88d6b7fb0228795491d",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/51281/large/GDN_USDG_Token_200x200.png?1730484111",
+    "symbol": "USDG"
+  },
+  {
+    "chainId": 1,
+    "address": "0x7712c34205737192402172409a8f7ccef8aa2aec",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/36291/large/blackrock.png?1711013223",
+    "symbol": "BUIDL"
+  },
+  {
+    "chainId": 1,
+    "address": "0x45804880de22913dafe09f4980848ece6ecbaf78",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/9519/large/paxgold.png?1696509604",
+    "symbol": "PAXG"
+  },
+  {
+    "chainId": 1,
+    "address": "0x3c3a81e81dc49a522a592e7622a7e711c06bf354",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/30980/large/MNT_Token_Logo.png?1765516974",
+    "symbol": "MNT"
+  },
+  {
+    "chainId": 1,
+    "address": "0x1f9840a85d5af5bf1d1762f925bdaddc4201f984",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/12504/large/uniswap-logo.png?1720676669",
+    "symbol": "UNI"
+  },
+  {
+    "chainId": 1,
+    "address": "0x8d010bf9c26881788b4e6bf5fd1bdc358c8f90b8",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/12171/large/polkadot.jpg?1766533446",
+    "symbol": "DOT"
+  },
+  {
+    "chainId": 1,
+    "address": "0x56072c95faa701256059aa122697b133aded9279",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/39925/large/sky.jpg?1724827980",
+    "symbol": "SKY"
+  },
+  {
+    "chainId": 1,
+    "address": "0xfa2b947eec368f42195f24f36d2af29f7c24cec2",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/54558/large/ff_200_X_200.png?1740741076",
+    "symbol": "USDF"
+  },
+  {
+    "chainId": 1,
+    "address": "0xda5e1988097297dcdc1f90d4dfe7909e847cbef6",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/50767/large/wlfi.png?1756438915",
+    "symbol": "WLFI"
+  },
+  {
+    "chainId": 1,
+    "address": "0x75231f58b43240c9718dd58b4967c5114342a86c",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/4463/large/WeChat_Image_20220118095654.png?1696505053",
+    "symbol": "OKB"
+  },
+  {
+    "chainId": 1,
+    "address": "0x6982508145454ce325ddbe47a25d4ec3d2311933",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/29850/large/pepe-token.jpeg?1696528776",
+    "symbol": "PEPE"
+  },
+  {
+    "chainId": 1,
+    "address": "0x61ec85ab89377db65762e234c946b5c25a56e99e",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/35491/large/Frame_1321318576.png?1708908626",
+    "symbol": "HTX"
+  },
+  {
+    "chainId": 1,
+    "address": "0x4f8e5de400de08b164e7421b3ee387f461becd1a",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/25380/large/UUSD.jpg?1696524513",
+    "symbol": "USDD"
+  },
+  {
+    "chainId": 1,
+    "address": "0x8292bb45bf1ee4d140127049757c2e0ff06317ed",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/39651/large/RLUSD_200x200_%281%29.png?1727376633",
+    "symbol": "RLUSD"
+  },
+  {
+    "chainId": 1,
+    "address": "0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/12645/large/aave-token-round.png?1720472354",
+    "symbol": "AAVE"
+  },
+  {
+    "chainId": 1,
+    "address": "0x54d2252757e1672eead234d27b1270728ff90581",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/11610/large/Bitget_logo.png?1736925727",
+    "symbol": "BGB"
+  },
+  {
+    "chainId": 1,
+    "address": "0x96f6ef951840721adbf46ac996b59e0235cb985c",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/31700/large/usdy_%281%29.png?1696530524",
+    "symbol": "USDY"
+  },
+  {
+    "chainId": 1,
+    "address": "0x00f3c42833c3170159af4e92dbb451fb3f708917",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/14495/large/Internet_Computer_logo.png?1696514180",
+    "symbol": "ICP"
+  },
+  {
+    "chainId": 1,
+    "address": "0xfaba6f8e4a5e8ab82f62fe7c39859fa577269be3",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/26580/large/ONDO.png?1696525656",
+    "symbol": "ONDO"
+  },
+  {
+    "chainId": 1,
+    "address": "0x58d97b57bb95320f9a05dc918aef65434969c2b2",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/29837/large/Morpho-token-icon.png?1726771230",
+    "symbol": "MORPHO"
+  },
+  {
+    "chainId": 1,
+    "address": "0xce24439f2d9c6a2289f741120fe202248b666666",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/71157/large/united-stables-logo.jpg?1766061640",
+    "symbol": "U"
+  },
+  {
+    "chainId": 1,
+    "address": "0x4a220e6096b25eadb88358cb44068a3248254675",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/3370/large/5ZOu7brX_400x400.jpg?1696504070",
+    "symbol": "QNT"
+  },
+  {
+    "chainId": 1,
+    "address": "0x455e53cbb86018ac2b8092fdcd39d8444affc3f6",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/32440/large/pol.png?1759114181",
+    "symbol": "POL"
+  },
+  {
+    "chainId": 1,
+    "address": "0xa0769f7a8fc65e47de93797b4e21c073c117fc80",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/39657/large/EUTBL.png?1723517425",
+    "symbol": "EUTBL"
+  },
+  {
+    "chainId": 1,
+    "address": "0x43415eb6ff9db7e26a15b704e7a3edce97d31c4e",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/35012/large/ustb.jpeg?1707102680",
+    "symbol": "USTB"
+  },
+  {
+    "chainId": 1,
+    "address": "0x57e114b691db790c35207b2e685d4a43181e6061",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/36530/large/ethena.png?1711701436",
+    "symbol": "ENA"
+  },
+  {
+    "chainId": 1,
+    "address": "0xb62132e35a6c13ee1ee0f84dc5d40bad8d815206",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/3695/large/CG-nexo-token-200x200_2x.png?1730414360",
+    "symbol": "NEXO"
+  },
+  {
+    "chainId": 1,
+    "address": "0x6de037ef9ad2725eb40118bb1702ebb27e4aeb24",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/11636/large/rndr.png?1696511529",
+    "symbol": "RENDER"
+  },
+  {
+    "chainId": 1,
+    "address": "0xe66747a101bff2dba3697199dcce5b743b454759",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/8183/large/200X200.png?1735246724",
+    "symbol": "GT"
+  },
+  {
+    "chainId": 1,
+    "address": "0x163f8c2467924be0ae7b5347228cabf260318753",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/31069/large/worldcoin.jpeg?1696529903",
+    "symbol": "WLD"
+  },
+  {
+    "chainId": 1,
+    "address": "0xb50721bcf8d664c30412cfbc6cf7a15145234ad1",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/16547/large/arb.jpg?1721358242",
+    "symbol": "ARB"
+  },
+  {
+    "chainId": 1,
+    "address": "0x6418c0dd099a9fda397c766304cdd918233e8847",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/52622/large/PUDGY_PENGUINS_PENGU_PFP.png?1733809110",
+    "symbol": "PENGU"
+  },
+  {
+    "chainId": 1,
+    "address": "0x77c6e4a580c0dce4e5c7a17d0bc077188a83a059",
+    "logoURI": "https://assets.coingecko.com/coins/images/12918/thumb/swerve.png?1696512706",
+    "symbol": "SWUSD"
+  },
+  {
+    "chainId": 1,
+    "address": "0xf8e57ac2730d3088d98b79209739b0d5ba085a03",
+    "logoURI": "https://assets.coingecko.com/coins/images/39332/thumb/OPAI.jpg?1721777150",
+    "symbol": "OPAI"
+  },
+  {
+    "chainId": 1,
+    "address": "0xa58a4f5c4bb043d2cc1e170613b74e767c94189b",
+    "logoURI": "https://assets.coingecko.com/coins/images/12831/thumb/Aa5nmbkJ_400x400.png?1696512622",
+    "symbol": "UTU"
+  },
+  {
+    "chainId": 1,
+    "address": "0x431d5dff03120afa4bdf332c61a6e1766ef37bdb",
+    "logoURI": "https://assets.coingecko.com/coins/images/25971/thumb/JPYC_Prepaid.png?1734356447",
+    "symbol": "JPYC"
+  },
+  {
+    "chainId": 1,
+    "address": "0x9e6be44cc1236eef7e1f197418592d363bedcd5a",
+    "logoURI": "https://assets.coingecko.com/coins/images/38499/thumb/azuro.jpeg?1717727357",
+    "symbol": "AZUR"
+  },
+  {
+    "chainId": 1,
+    "address": "0x19848077f45356b21164c412eff3d3e4ff6ebc31",
+    "logoURI": "https://assets.coingecko.com/coins/images/38609/thumb/GSTxiIkXgAAUdyJ.jpg?1721163699",
+    "symbol": "SPIKE"
+  },
+  {
+    "chainId": 1,
+    "address": "0x2370f9d504c7a6e775bf6e14b3f12846b594cd53",
+    "logoURI": "https://assets.coingecko.com/coins/images/17277/thumb/WoZ8rruL_400x400.png?1696516831",
+    "symbol": "JPYC"
+  },
+  {
+    "chainId": 1,
+    "address": "0xb6ca7399b4f9ca56fc27cbff44f4d2e4eef1fc81",
+    "logoURI": "https://assets.coingecko.com/coins/images/13230/thumb/muse_logo.png?1696513008",
+    "symbol": "MUSE"
+  },
+  {
+    "chainId": 1,
+    "address": "0x28d38df637db75533bd3f71426f3410a82041544",
+    "logoURI": "https://assets.coingecko.com/coins/images/55169/thumb/wayfinder.jpg?1744336900",
+    "symbol": "PROMPT"
+  },
+  {
+    "chainId": 1,
+    "address": "0x77607588222e01bf892a29abab45796a2047fc7b",
+    "logoURI": "https://assets.coingecko.com/coins/images/14624/thumb/uETH.png?1696514302",
+    "symbol": "UETH"
+  },
+  {
+    "chainId": 1,
+    "address": "0xb478c6245e3d85d6ec3486b62ea872128d562541",
+    "logoURI": "https://assets.coingecko.com/coins/images/30985/thumb/K7dMTTKi_400x400.png?1696529824",
+    "symbol": "LOOT"
+  },
+  {
+    "chainId": 1,
+    "address": "0xd5e0eda0214f1d05af466e483d9376a77a67448b",
+    "logoURI": "https://assets.coingecko.com/coins/images/38900/thumb/TRALA.png?1719456891",
+    "symbol": "TRALA"
+  },
+  {
+    "chainId": 1,
+    "address": "0xdab396ccf3d84cf2d07c4454e10c8a6f5b008d2b",
+    "logoURI": "https://assets.coingecko.com/coins/images/19081/thumb/GOLDFINCH.png?1696518531",
+    "symbol": "GFI"
+  },
+  {
+    "chainId": 1,
+    "address": "0x471a202f69d6e975da55e363dab1bdb2e86e0c0f",
+    "logoURI": "https://assets.coingecko.com/coins/images/30332/thumb/geke.jpg?1696529233",
+    "symbol": "GEKE"
+  },
+  {
+    "chainId": 1,
+    "address": "0xe07ecc676daf0b24b24a1c46c966d9c463984b38",
+    "logoURI": "https://assets.coingecko.com/coins/images/39079/thumb/useu.png?1720270389",
+    "symbol": "USEU"
+  },
+  {
+    "chainId": 1,
+    "address": "0x723cbfc05e2cfcc71d3d89e770d32801a5eef5ab",
+    "logoURI": "https://assets.coingecko.com/coins/images/3545/thumb/DSiD9ZhWsAE_8cS.png?1696504231",
+    "symbol": "BTCP"
+  },
+  {
+    "chainId": 1,
+    "address": "0x104e363ac6521e55a24ae724855362acec3febe6",
+    "logoURI": "https://assets.coingecko.com/coins/images/53822/thumb/D4ixzPry_400x400.jpg?1737490883",
+    "symbol": "ACP"
+  },
+  {
+    "chainId": 1,
+    "address": "0x20c64dee8fda5269a78f2d5bdba861ca1d83df7a",
+    "logoURI": "https://assets.coingecko.com/coins/images/31868/thumb/200p_bHIGH_3.png?1740503180",
+    "symbol": "BHIGH"
+  },
+  {
+    "chainId": 1,
+    "address": "0x1a91b61e884ddd93a0aa83cd6908a4bc07e6f3eb",
+    "logoURI": "https://assets.coingecko.com/coins/images/54594/thumb/atn-logo.jpg?1740569495",
+    "symbol": "ATN"
+  },
+  {
+    "chainId": 1,
+    "address": "0xd7c1eb0fe4a30d3b2a846c04aa6300888f087a5f",
+    "logoURI": "https://assets.coingecko.com/coins/images/33666/thumb/points_%281%29.png?1703050357",
+    "symbol": "POINTS"
+  },
+  {
+    "chainId": 1,
+    "address": "0x1beef31946fbbb40b877a72e4ae04a8d1a5cee06",
+    "logoURI": "https://assets.coingecko.com/coins/images/7590/thumb/Parachute_Logo.png?1696507850",
+    "symbol": "PAR"
+  },
+  {
+    "chainId": 1,
+    "address": "0x70e8de73ce538da2beed35d14187f6959a8eca96",
+    "logoURI": "https://assets.coingecko.com/coins/images/12832/thumb/XSGD_Logo_Full_Colour_1.png?1772634156",
+    "symbol": "XSGD"
+  },
+  {
+    "chainId": 1,
+    "address": "0x89ab32156e46f46d02ade3fecbe5fc4243b9aaed",
+    "logoURI": "https://assets.coingecko.com/coins/images/11659/thumb/pNetwork.png?1696511550",
+    "symbol": "PNT"
+  },
+  {
+    "chainId": 1,
+    "address": "0x2f42b7d686ca3effc69778b6ed8493a7787b4d6e",
+    "logoURI": "https://assets.coingecko.com/coins/images/4372/thumb/just_logo_dark_background.png?1724826855",
+    "symbol": "TARA"
+  },
+  {
+    "chainId": 1,
+    "address": "0xa5ca62d95d24a4a350983d5b8ac4eb8638887396",
+    "logoURI": "https://assets.coingecko.com/coins/images/28794/thumb/yvsUSD-128-0xa5cA62D95D24A4a350983D5B8ac4EB8638887396.png?1696527772",
+    "symbol": "YVSUSD"
+  },
+  {
+    "chainId": 1,
+    "address": "0xfcc5c47be19d06bf83eb04298b026f81069ff65b",
+    "logoURI": "https://assets.coingecko.com/coins/images/27622/thumb/yearncrvnew_32.png?1696526653",
+    "symbol": "YCRV"
+  },
+  {
+    "chainId": 1,
+    "address": "0x086f405146ce90135750bbec9a063a8b20a8bffb",
+    "logoURI": "https://assets.coingecko.com/coins/images/71219/thumb/brevis-circle_200x200.png?1774374634",
+    "symbol": "BREV"
+  },
+  {
+    "chainId": 1,
+    "address": "0x5394794be8b6ed5572fcd6b27103f46b5f390e8f",
+    "logoURI": "https://assets.coingecko.com/coins/images/17258/thumb/aAmmUniYFIWETH.png?1696516814",
+    "symbol": "AAMMUNIYFIWETH"
+  },
+  {
+    "chainId": 1,
+    "address": "0xec21890967a8ceb3e55a3f79dac4e90673ba3c2e",
+    "logoURI": "https://assets.coingecko.com/coins/images/34932/thumb/1000003129.jpg?1706694024",
+    "symbol": "BEBE"
+  },
+  {
+    "chainId": 1,
+    "address": "0xf0610eb7d8ee12d59412da32625d5e273e78ff0b",
+    "logoURI": "https://assets.coingecko.com/coins/images/32311/thumb/MASTERDEX_logo-02_%282%29.png?1697188983",
+    "symbol": "MDEX"
+  },
+  {
+    "chainId": 1,
+    "address": "0x2de509bf0014ddf697b220be628213034d320ece",
+    "logoURI": "https://assets.coingecko.com/coins/images/28058/thumb/1Artboard_1_%282%29.png?1696527070",
+    "symbol": "DBI"
+  },
+  {
+    "chainId": 1,
+    "address": "0x2edf094db69d6dcd487f1b3db9febe2eec0dd4c5",
+    "logoURI": "https://assets.coingecko.com/coins/images/12861/thumb/logo.?1696512650",
+    "symbol": "ZEE"
+  },
+  {
+    "chainId": 1,
+    "address": "0x378cb52b00f9d0921cb46dfc099cff73b42419dc",
+    "logoURI": "https://assets.coingecko.com/coins/images/28788/thumb/yvLUSD-128-0x378cb52b00F9D0921cb46dFc099CFf73b42419dC.png?1696527767",
+    "symbol": "YVLUSD"
+  },
+  {
+    "chainId": 1,
+    "address": "0x44b28991b167582f18ba0259e0173176ca125505",
+    "logoURI": "https://assets.coingecko.com/coins/images/102173012/thumb/unipeg.jpg?1777188215",
+    "symbol": "UPEG"
+  },
+  {
+    "chainId": 1,
+    "address": "0xd31e53966bf212e860d48a3a8651a23d09a7fdc3",
+    "logoURI": "https://assets.coingecko.com/coins/images/33023/thumb/DogeAI_logo_200x200.png?1700316738",
+    "symbol": "DOGEAI"
+  },
+  {
+    "chainId": 1,
+    "address": "0x6d765cbe5bc922694afe112c140b8878b9fb0390",
+    "logoURI": "https://assets.coingecko.com/coins/images/28789/thumb/yvSUSHI-128-0x6d765CbE5bC922694afE112C140b8878b9FB0390.png?1696527767",
+    "symbol": "YVSUSHI"
+  },
+  {
+    "chainId": 1,
+    "address": "0xace8e719899f6e91831b18ae746c9a965c2119f1",
+    "logoURI": "https://assets.coingecko.com/coins/images/68688/thumb/usdon_160x160.png?1756268513",
+    "symbol": "USDON"
+  },
+  {
+    "chainId": 1,
+    "address": "0x9c78ee466d6cb57a4d01fd887d2b5dfb2d46288f",
+    "logoURI": "https://assets.coingecko.com/coins/images/13688/thumb/must_logo.png?1696513436",
+    "symbol": "MUST"
+  },
+  {
+    "chainId": 1,
+    "address": "0x220b71671b649c03714da9c621285943f3cbcdc6",
+    "logoURI": "https://assets.coingecko.com/coins/images/13745/thumb/Tosdis-black.png?1696513488",
+    "symbol": "DIS"
+  },
+  {
+    "chainId": 1,
+    "address": "0xd109b2a304587569c84308c55465cd9ff0317bfb",
+    "logoURI": "https://assets.coingecko.com/coins/images/17261/thumb/aAmmBptBALWETH.png?1696516816",
+    "symbol": "AAMMBPTBALWETH"
+  },
+  {
+    "chainId": 1,
+    "address": "0xfd0877d9095789caf24c98f7cce092fa8e120775",
+    "logoURI": "https://assets.coingecko.com/coins/images/28790/thumb/yvTUSD-128-0xFD0877d9095789cAF24c98F7CCe092fa8E120775.png?1696527768",
+    "symbol": "YVTUSD"
+  },
+  {
+    "chainId": 1,
+    "address": "0x2602278ee1882889b946eb11dc0e810075650983",
+    "logoURI": "https://assets.coingecko.com/coins/images/20497/thumb/AcF08Jk1_400x400.jpg?1696519904",
+    "symbol": "VADER"
+  },
+  {
+    "chainId": 1,
+    "address": "0x71fc860f7d3a592a4a98740e39db31d25db65ae8",
+    "logoURI": "https://assets.coingecko.com/coins/images/11725/thumb/aUSDT.png?1696511607",
+    "symbol": "AUSDT"
+  },
+  {
+    "chainId": 1,
+    "address": "0x0000000000095413afc295d19edeb1ad7b71c952",
+    "logoURI": "https://assets.coingecko.com/coins/images/13454/thumb/lon_logo.png?1696513217",
+    "symbol": "LON"
+  },
+  {
+    "chainId": 1,
+    "address": "0xfc05987bd2be489accf0f509e44b0145d68240f7",
+    "logoURI": "https://assets.coingecko.com/coins/images/2483/thumb/Essentia-token.jpg?1696503302",
+    "symbol": "ESS"
+  },
+  {
+    "chainId": 1,
+    "address": "0x20c3fa331a385b63ee39137e99d0cf2db142fce1",
+    "logoURI": "https://assets.coingecko.com/coins/images/28847/thumb/rsz_logo1.png?1696527823",
+    "symbol": "SHIL"
+  },
+  {
+    "chainId": 1,
+    "address": "0x7f0c8b125040f707441cad9e5ed8a8408673b455",
+    "logoURI": "https://assets.coingecko.com/coins/images/13436/thumb/nebo.png?1728297948",
+    "symbol": "NEBO"
+  },
+  {
+    "chainId": 1,
+    "address": "0xd3d3f901b2d9c587988333f00b154d57fce9dd07",
+    "logoURI": "https://assets.coingecko.com/coins/images/70595/thumb/tokenworks.png?1762699911",
+    "symbol": "NAKASTR"
+  },
+  {
+    "chainId": 1,
+    "address": "0x441761326490cacf7af299725b6292597ee822c2",
+    "logoURI": "https://assets.coingecko.com/coins/images/13152/thumb/logo-2.png?1696512937",
+    "symbol": "UNFI"
+  },
+  {
+    "chainId": 1,
+    "address": "0xbdab72602e9ad40fc6a6852caf43258113b8f7a5",
+    "logoURI": "https://assets.coingecko.com/coins/images/16248/thumb/sovryn_logo_orange.png?1709174299",
+    "symbol": "SOV"
+  },
+  {
+    "chainId": 143,
+    "address": "0x0555e30da8f98308edb960aa94c0db47230d2b9c",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/7598/large/WBTCLOGO.png?1764496367",
+    "symbol": "WBTC"
+  },
+  {
+    "chainId": 143,
+    "address": "0x754704bc059f8c67012fed69bc8a327a5aafb603",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/6319/large/USDC.png?1769615602",
+    "symbol": "USDC"
+  },
+  {
+    "chainId": 143,
+    "address": "0x6fe981dbd557f81ff66836af0932cba535cbc343",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/877/large/Chainlink_Logo_500.png?1760023405",
+    "symbol": "LINK"
+  },
+  {
+    "chainId": 143,
+    "address": "0x111111d2bf19e43c34263401e0cad979ed1cdb61",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/54977/large/USD1_1000x1000_transparent.png?1749297002",
+    "symbol": "USD1"
+  },
+  {
+    "chainId": 143,
+    "address": "0xc18e6f730896971a79d748e8dea61067a9bc6040",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/70445/large/JTRSY.png?1762078582",
+    "symbol": "JTRSY"
+  },
+  {
+    "chainId": 143,
+    "address": "0xad48f183e586e92a591a610397ebf534609df797",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/70446/large/jaaa.png?1762078666",
+    "symbol": "JAAA"
+  },
+  {
+    "chainId": 143,
+    "address": "0x00000000efe302beaa2b3e6e1b18d08d69a9012a",
+    "logoURI": "https://coin-images.coingecko.com/coins/images/39284/large/AUSD_1024px.png?1764684132",
+    "symbol": "AUSD"
+  },
+  {
+    "chainId": 143,
+    "address": "0x3ff60900b70db8d0bde4d4819f028673718c5d1b",
+    "logoURI": "https://assets.coingecko.com/coins/images/70814/thumb/gmonad-logo.jpg?1764000507",
+    "symbol": "GMONAD"
+  },
+  {
+    "chainId": 143,
+    "address": "0xfd44b35139ae53fff7d8f2a9869c503d987f00d1",
+    "logoURI": "https://assets.coingecko.com/coins/images/102172663/thumb/lvusd_%282%29.png?1774540238",
+    "symbol": "LVUSD"
+  },
+  {
+    "chainId": 143,
+    "address": "0xc88cacd6fe1838c8dd1f0244b6cc0dee910dd261",
+    "logoURI": "https://assets.coingecko.com/coins/images/70760/thumb/AethonSwap_Logo_icon.png?1763560124",
+    "symbol": "AETHON"
+  },
+  {
+    "chainId": 143,
+    "address": "0x336d414754967c6682b5a665c7daf6f1409e63e8",
+    "logoURI": "https://assets.coingecko.com/coins/images/70763/thumb/muBOND_4x.png?1763566024",
+    "symbol": "MUBOND"
+  },
+  {
+    "chainId": 143,
+    "address": "0x9c82eb49b51f7dc61e22ff347931ca32adc6cd90",
+    "logoURI": "https://assets.coingecko.com/coins/images/70764/thumb/loAZND_4x.png?1763566149",
+    "symbol": "LOAZND"
+  },
+  {
+    "chainId": 143,
+    "address": "0x0c65a0bc65a5d819235b71f554d210d3f80e0852",
+    "logoURI": "https://assets.coingecko.com/coins/images/102171785/thumb/aprmon.png?1769745447",
+    "symbol": "APRMON"
+  },
+  {
+    "chainId": 143,
+    "address": "0x228c673cae7aad0f4d9f309616d6b546356b7777",
+    "logoURI": "https://assets.coingecko.com/coins/images/70902/thumb/Screenshot_2025-11-29_at_14.48.01.png?1764485818",
+    "symbol": "BC"
+  },
+  {
+    "chainId": 143,
+    "address": "0x91b81bfbe3a747230f0529aa28d8b2bc898e6d56",
+    "logoURI": "https://assets.coingecko.com/coins/images/102172662/thumb/lvmon_%282%29.png?1774540128",
+    "symbol": "LVMON"
+  },
+  {
+    "chainId": 143,
+    "address": "0x8d5c2df3eef09088fcccf3376d8ecd0dd505f642",
+    "logoURI": "https://assets.coingecko.com/coins/images/102172925/thumb/wnusdc.png?1776663817",
+    "symbol": "WNUSDC"
+  },
+  {
+    "chainId": 143,
+    "address": "0x97401d48a80b15bc7291599e24b590eedcd7ce37",
+    "logoURI": "https://assets.coingecko.com/coins/images/70965/thumb/agBxURDU_400x400.jpg?1764865069",
+    "symbol": "HST"
+  },
+  {
+    "chainId": 143,
+    "address": "0x21e325b059cd83d4037c82f0f5998ba2df3d7777",
+    "logoURI": "https://assets.coingecko.com/coins/images/102173014/thumb/main_mascot.png?1777218464",
+    "symbol": "BOB"
+  },
+  {
+    "chainId": 143,
+    "address": "0x25ac11cb986ca6910501803af5b4e41cf3ad9999",
+    "logoURI": "https://assets.coingecko.com/coins/images/70817/thumb/monad-printer.jpg?1764001342",
+    "symbol": "MONADP"
+  },
+  {
+    "chainId": 143,
+    "address": "0x39b9e06f226ff6d7500c870b82333aacbd2f7777",
+    "logoURI": "https://assets.coingecko.com/coins/images/70931/thumb/McXzpmJ3_400x400_%281%29.jpg?1776434327",
+    "symbol": "NADS"
+  },
+  {
+    "chainId": 143,
+    "address": "0x8c213ee79581ff4984583c6a801e5263418c4b86",
+    "logoURI": "https://assets.coingecko.com/coins/images/70445/thumb/JTRSY.png?1762078582",
+    "symbol": "JTRSY"
+  },
+  {
+    "chainId": 143,
+    "address": "0x1f80c65cc2c37af84abbe1ea03183a624a6f8888",
+    "logoURI": "https://assets.coingecko.com/coins/images/70816/thumb/gmonad.jpg?1764001159",
+    "symbol": "GMONAD"
+  },
+  {
+    "chainId": 143,
+    "address": "0x4e8aaecce10ad9394e96fe5f2bd4e587a7b04298",
+    "logoURI": "https://assets.coingecko.com/coins/images/102172923/thumb/wnusdt0.png?1776663586",
+    "symbol": "WNUSDT0"
+  },
+  {
+    "chainId": 143,
+    "address": "0x1001ff13bf368aa4fa85f21043648079f00e1001",
+    "logoURI": "https://assets.coingecko.com/coins/images/102172659/thumb/Tokens_1.png?1774539092",
+    "symbol": "LV"
+  },
+  {
+    "chainId": 143,
+    "address": "0x5a0f93d040de44e78f251b03c43be9cf317dcf64",
+    "logoURI": "https://assets.coingecko.com/coins/images/70446/thumb/jaaa.png?1762078666",
+    "symbol": "JAAA"
+  },
+  {
+    "chainId": 143,
+    "address": "0x81a224f8a62f52bde942dbf23a56df77a10b7777",
+    "logoURI": "https://assets.coingecko.com/coins/images/102172808/thumb/wi13repazwee6wximmko4nk8jfbo.?1775837251",
+    "symbol": "EMO"
+  },
+  {
+    "chainId": 143,
+    "address": "0x42a4aa89864a794de135b23c6a8d2e05513d7777",
+    "logoURI": "https://assets.coingecko.com/coins/images/102172809/thumb/ij9ijranevqkq1wp7kuhocuqpgbz.?1775837396",
+    "symbol": "SHRAMP"
+  },
+  {
+    "chainId": 143,
+    "address": "0xd691b0afed67f96cec28ab6308cbe5b2c103b7e9",
+    "logoURI": "https://assets.coingecko.com/coins/images/102172176/thumb/eBTC.png?1772034448",
+    "symbol": "EBTC"
+  },
+  {
+    "chainId": 143,
+    "address": "0x65ea4cdaf74537202bfb1124131e1c68f9512d1b",
+    "logoURI": "https://assets.coingecko.com/coins/images/70818/thumb/salmonad.jpg?1764001840",
+    "symbol": "SAL"
+  },
+  {
+    "chainId": 143,
+    "address": "0xee8c0e9f1bffb4eb878d8f15f368a02a35481242",
+    "logoURI": "https://assets.coingecko.com/coins/images/70824/thumb/weth_2.jpg?1764040144",
+    "symbol": "WETH"
+  },
+  {
+    "chainId": 143,
+    "address": "0xd786f7569c39a9f64e6a54eb77db21364e90f279",
+    "logoURI": "https://assets.coingecko.com/coins/images/102172927/thumb/WNLOAZND.png?1776668686",
+    "symbol": "WNLOAZND"
+  },
+  {
+    "chainId": 143,
+    "address": "0x82c370ba90e38ef6acd8b1b078d34fd86fc6bac9",
+    "logoURI": "https://assets.coingecko.com/coins/images/102172924/thumb/wnausd.png?1776663707",
+    "symbol": "WNAUSD"
+  },
+  {
+    "chainId": 143,
+    "address": "0xa3227c5969757783154c60bf0bc1944180ed81b9",
+    "logoURI": "https://assets.coingecko.com/coins/images/70835/thumb/sMON_%281%29.png?1764091581",
+    "symbol": "SMON"
+  },
+  {
+    "chainId": 143,
+    "address": "0x9477724bb54ad5417de8baff29e59df3fb4da74f",
+    "logoURI": "https://assets.coingecko.com/coins/images/70454/thumb/acdrx.png?1762081579",
+    "symbol": "ACRDX"
+  },
+  {
+    "chainId": 143,
+    "address": "0x1b68626dca36c7fe922fd2d55e4f631d962de19c",
+    "logoURI": "https://assets.coingecko.com/coins/images/70837/thumb/SHMONAD_ICON_%281%29.png?1764108788",
+    "symbol": "SHMON"
+  },
+  {
+    "chainId": 143,
+    "address": "0x103222f020e98bba0ad9809a011fdf8e6f067496",
+    "logoURI": "https://assets.coingecko.com/coins/images/71069/thumb/Untitled_design.png?1765520002",
+    "symbol": "EARNAUSD"
+  },
+  {
+    "chainId": 143,
+    "address": "0x1ad7052bb331a0529c1981c3ec2bc4663498a110",
+    "logoURI": "https://assets.coingecko.com/coins/images/70749/thumb/Avatar-min.png?1763461541",
+    "symbol": "ALLOCA"
+  },
+  {
+    "chainId": 143,
+    "address": "0xdb39a9d4a1f1b4e93a5684d602207628ad60613c",
+    "logoURI": "https://assets.coingecko.com/coins/images/102172926/thumb/wnwmon.png?1776664202",
+    "symbol": "WNWMON"
+  },
+  {
+    "chainId": 143,
+    "address": "0x3bd359c1119da7da1d913d1c4d2b7c461115433a",
+    "logoURI": "https://assets.coingecko.com/coins/images/70784/thumb/wmon.png?1766028904",
+    "symbol": "WMON"
+  },
+  {
+    "chainId": 143,
+    "address": "0x7db552eeb6b77a6babe6e0a739b5382cd653cc3e",
+    "logoURI": "https://assets.coingecko.com/coins/images/70825/thumb/gmonad.jpg?1764041457",
+    "symbol": "GMONAD"
+  },
+  {
+    "chainId": 143,
+    "address": "0xad96c3dffcd6374294e2573a7fbba96097cc8d7c",
+    "logoURI": "https://assets.coingecko.com/coins/images/71148/thumb/dust_200.png?1765996628",
+    "symbol": "DUST"
+  },
+  {
+    "chainId": 143,
+    "address": "0x350035555e10d9afaf1566aaebfced5ba6c27777",
+    "logoURI": "https://assets.coingecko.com/coins/images/70930/thumb/chog.png?1764628221",
+    "symbol": "CHOG"
+  },
+  {
+    "chainId": 143,
+    "address": "0x4917a5ec9fcb5e10f47cbb197abe6ab63be81fe8",
+    "logoURI": "https://assets.coingecko.com/coins/images/70762/thumb/AZND_4x.png?1763565962",
+    "symbol": "AZND"
+  },
+  {
+    "chainId": 143,
+    "address": "0xd32e9ddd968b18e8429f2d1da7efb2cc1f01d42d",
+    "logoURI": "https://assets.coingecko.com/coins/images/70815/thumb/molandak-logo.jpg?1764000856",
+    "symbol": "MOLANDAK"
+  },
+  {
+    "chainId": 143,
+    "address": "0xf7cf282ec810fded974f99c0163e792f432892bc",
+    "logoURI": "https://assets.coingecko.com/coins/images/71550/thumb/mhyperbtc-Bvh-K9IL.png?1768299091",
+    "symbol": "MHYPERBTC"
+  },
+  {
+    "chainId": 143,
+    "address": "0xff7f8f301f7a706e3cfd3d2275f5dc0b9ee8009b",
+    "logoURI": "https://assets.coingecko.com/coins/images/70268/thumb/1000331462.png?1761335326",
+    "symbol": "FOLKS"
+  },
+  {
+    "chainId": 143,
+    "address": "0xd90f6bfed23ffde40106fc4498dd2e9edb95e4e7",
+    "logoURI": "https://assets.coingecko.com/coins/images/68298/thumb/mHYPER.png?1755286538",
+    "symbol": "MHYPER"
+  },
+  {
+    "chainId": 143,
+    "address": "0xd33f18d8d48cbbb2f8b47063de97f94de0d49b99",
+    "logoURI": "https://assets.coingecko.com/coins/images/71097/thumb/nxpc.png?1765787220",
+    "symbol": "NXPC"
+  },
+  {
+    "chainId": 143,
+    "address": "0x2f2f2f74ab5db61ae8bd3c13ccd4dc8c9e8a2f2f",
+    "logoURI": "https://assets.coingecko.com/coins/images/31633/thumb/200x200_Black.png?1747800050",
+    "symbol": "ZF"
+  },
+  {
+    "chainId": 143,
+    "address": "0x2fabf1c784b8583d63c00c5c9c0377d8cf1a3245",
+    "logoURI": "https://assets.coingecko.com/coins/images/70454/thumb/acdrx.png?1762081579",
+    "symbol": "ACRDX"
+  },
+  {
+    "chainId": 143,
+    "address": "0x123468b48eadbc13c65cd9c66a9913cde4e94321",
+    "logoURI": "https://assets.coingecko.com/coins/images/36497/thumb/Logo_Long_square.png?1717541650",
+    "symbol": "LONG"
+  },
+  {
+    "chainId": 143,
+    "address": "0xe7cd86e13ac4309349f30b3435a9d337750fc82d",
+    "logoURI": "https://assets.coingecko.com/coins/images/53705/thumb/usdt0.jpg?1737086183",
+    "symbol": "USDT0"
+  },
+  {
+    "chainId": 143,
+    "address": "0xae4efbc7736f963982aacb17efa37fcbab924cb3",
+    "logoURI": "https://assets.coingecko.com/coins/images/36800/thumb/solvBTC.png?1719810684",
+    "symbol": "SOLVBTC"
+  },
+  {
+    "chainId": 143,
+    "address": "0x484be0540ad49f351eaa04eeb35df0f937d4e73f",
+    "logoURI": "https://assets.coingecko.com/coins/images/70132/thumb/Group_427319351.png?1760695727",
+    "symbol": "SYZUSD"
+  },
+  {
+    "chainId": 143,
+    "address": "0x01bff41798a0bcf287b996046ca68b395dbc1071",
+    "logoURI": "https://assets.coingecko.com/coins/images/66560/thumb/XAUt0_Token_Icon_Gold.png?1749747942",
+    "symbol": "XAUT0"
+  },
+  {
+    "chainId": 143,
+    "address": "0x10aeaf63194db8d453d4d85a06e5efe1dd0b5417",
+    "logoURI": "https://assets.coingecko.com/coins/images/18834/thumb/wstETH.png?1696518295",
+    "symbol": "WSTETH"
+  },
+  {
+    "chainId": 143,
+    "address": "0x0a332311633c0625f63cfc51ee33fc49826e0a3c",
+    "logoURI": "https://assets.coingecko.com/coins/images/70220/thumb/logo-icon-Gradient.png?1761118006",
+    "symbol": "APR"
+  },
+  {
+    "chainId": 143,
+    "address": "0x8498312a6b3cbd158bf0c93abdcf29e6e4f55081",
+    "logoURI": "https://assets.coingecko.com/coins/images/39746/thumb/gMonad_200px.png?1723781729",
+    "symbol": "GMON"
+  },
+  {
+    "chainId": 143,
+    "address": "0xd18b7ec58cdf4876f6afebd3ed1730e4ce10414b",
+    "logoURI": "https://assets.coingecko.com/coins/images/40143/thumb/cbbtc.webp?1726136727",
+    "symbol": "CBBTC"
+  },
+  {
+    "chainId": 143,
+    "address": "0x1c8ee940b654bfced403f2a44c1603d5be0f50fa",
+    "logoURI": "https://assets.coingecko.com/coins/images/54591/thumb/medge_logo.png?1740565725",
+    "symbol": "MEDGE"
+  },
+  {
+    "chainId": 143,
+    "address": "0x46080f31351a6568f44575e3effde7f0c86867f9",
+    "logoURI": "https://assets.coingecko.com/coins/images/102172091/thumb/GILTS_Image.png?1771517121",
+    "symbol": "GILTS"
+  },
+  {
+    "chainId": 143,
+    "address": "0x7a9990ffe3057edc18558ca4c8804430fe917456",
+    "logoURI": "https://assets.coingecko.com/coins/images/52383/thumb/stable.jpg?1733259572",
+    "symbol": "TESOURO"
+  },
+  {
+    "chainId": 143,
+    "address": "0x834df4c1d8f51be24322e39e4766697be015512f",
+    "logoURI": "https://assets.coingecko.com/coins/images/37855/thumb/cetes.png?1715788161",
+    "symbol": "CETES"
+  },
+  {
+    "chainId": 143,
+    "address": "0x3db619ff72d877490699276061fb0fa0618fdf47",
+    "logoURI": "https://assets.coingecko.com/coins/images/32575/thumb/200.png?1698554742",
+    "symbol": "EARN"
+  },
+  {
+    "chainId": 143,
+    "address": "0xa3d68b74bf0528fdd07263c60d6488749044914b",
+    "logoURI": "https://assets.coingecko.com/coins/images/33033/thumb/weETH.png?1701438396",
+    "symbol": "WEETH"
+  },
+  {
+    "chainId": 143,
+    "address": "0x095957ceb9f317ac1328f0ab3123622401766d71",
+    "logoURI": "https://assets.coingecko.com/coins/images/71084/thumb/STONEUSD-background_White.png?1765618232",
+    "symbol": "STONEUSD"
+  },
+  {
+    "chainId": 143,
+    "address": "0x96043804d00dcec238718eedad9ac10719778380",
+    "logoURI": "https://assets.coingecko.com/coins/images/70906/thumb/Group_1321314974_%281%29.png?1764487804",
+    "symbol": "SHUSD"
+  },
+  {
+    "chainId": 143,
+    "address": "0xe9c082921dc3564e10196c5cc15db1250ac7d5c6",
+    "logoURI": "https://assets.coingecko.com/coins/images/102172092/thumb/KTB_Image.png?1771517177",
+    "symbol": "KTB"
+  },
+  {
+    "chainId": 143,
+    "address": "0xc53ac24320e3a54c7211e4993c8095078a0cb3cf",
+    "logoURI": "https://assets.coingecko.com/coins/images/37966/thumb/wgc-v3-logo.png?1776225874",
+    "symbol": "WGC"
+  },
+  {
+    "chainId": 143,
+    "address": "0xc99f5c922dae05b6e2ff83463ce705ef7c91f077",
+    "logoURI": "https://assets.coingecko.com/coins/images/39384/thumb/xSolvBTC.png?1744170824",
+    "symbol": "XSOLVBTC"
+  }
+]
