@@ -47,14 +47,15 @@ import HistoryPanel from "@/components/HistoryPanel";
 import { ConfirmBurnDialog, type ConfirmTokenLine } from "@/components/ConfirmBurnDialog";
 import { api } from "@/lib/api";
 import { apiUrl } from "@/lib/api-base";
-import { getTokenLogo, fallbackTokenLogo } from "@/lib/token-logos";
+import { getTokenLogo, getNativeLogo, fallbackTokenLogo } from "@/lib/token-logos";
 
 // Resolves a token logo. Uses Uniswap's official default token list (cached
 // from tokens.uniswap.org), with deterministic dicebear fallback for tokens
 // the list doesn't know about.
 function getTokenLogoUrl(chainId: number, address: string): string {
   if (address === "native") {
-    // Native gas tokens use a chain-keyed seed so MON / ETH have distinct icons
+    const native = getNativeLogo(chainId);
+    if (native) return native;
     return `https://api.dicebear.com/7.x/shapes/svg?seed=native-${chainId}&backgroundColor=7c3aed`;
   }
   const fromUniswap = getTokenLogo(chainId, address);
