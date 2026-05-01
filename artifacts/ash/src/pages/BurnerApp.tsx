@@ -71,6 +71,13 @@ interface TokenBalance {
 type BurnMode = "burn" | "recover";
 type AssetMode = "tokens" | "nfts";
 
+// Feature flag — flip to true to re-enable the NFT burner UI. The component
+// + library code is kept intact in the repo so we can ship it once the
+// indexer + history-schema work is wrapped up. Today the auto-detect endpoint
+// /api/explorer/nfts isn't deployed and the burns table doesn't store NFT
+// metadata, so the flow only half-works.
+const NFT_BURNER_ENABLED = false;
+
 async function fetchAutoTokenList(chainId: number): Promise<`0x${string}`[]> {
   try {
     const res = await fetch("https://tokens.uniswap.org");
@@ -1511,8 +1518,11 @@ export default function BurnerApp() {
 
         {/* Asset toggle: ERC-20 tokens vs NFTs. Hidden on unsupported
             chains since the burner doesn't operate there anyway — the
-            "switch network" banner above is the only meaningful action. */}
-        {isSupportedChain && (
+            "switch network" banner above is the only meaningful action.
+            Currently gated behind NFT_BURNER_ENABLED while we finish the
+            indexer + history-schema work; flip the flag at the top of the
+            file to bring the toggle back. */}
+        {NFT_BURNER_ENABLED && isSupportedChain && (
           <div className="flex p-1 rounded-xl bg-white/5 border border-white/10 max-w-sm mx-auto">
             <button
               onClick={() => setAssetMode("tokens")}
@@ -1537,7 +1547,7 @@ export default function BurnerApp() {
           </div>
         )}
 
-        {assetMode === "nfts" ? (
+        {NFT_BURNER_ENABLED && assetMode === "nfts" ? (
           <NftBurner chainId={chainId} isSupportedChain={isSupportedChain} />
         ) : isSupportedChain ? (
           <>
