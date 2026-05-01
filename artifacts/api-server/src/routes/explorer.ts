@@ -569,6 +569,25 @@ router.get("/explorer/nfts", async (req: Request, res: Response) => {
     `${base}/api/v2/addresses/${address}/tokens?type=ERC-721,ERC-1155`,
   ];
 
+  // Merge results across both Blockscout candidate endpoints: /nft returns
+  // per-instance ids when supported; /tokens carries holdings on shards
+  // where /nft is sparse. Dedup by contract+tokenId so wallets that show up
+  // in both don't double-render.
+  const merged = new Map<
+    string,
+    {
+      contractAddress: string;
+      tokenId: string;
+      type: "erc721" | "erc1155";
+      balance: string;
+      name: string | null;
+      collectionName: string | null;
+      imageUrl: string | null;
+    }
+  >();
+  let lastSource: string | null = null;
+  let anyCandidateOk = false;
+
   for (const baseUrl of candidates) {
     try {
       const collected: BlockscoutNftItem[] = [];
@@ -628,75 +647,78 @@ router.get("/explorer/nfts", async (req: Request, res: Response) => {
         if (!nextPageParams) break;
       }
 
-      // No data and first page didn't succeed → try the other candidate.
-      if (collected.length === 0 && !firstPageOk) continue;
+      if (firstPageOk) {
+        anyCandidateOk = true;
+        lastSource = baseUrl;
+      }
 
-      const nfts = collected
-        .map((it) => {
-          const tok = it?.token ?? it;
-          const addrRaw: unknown = tok?.address_hash ?? tok?.address;
-          if (typeof addrRaw !== "string") return null;
-          if (!/^0x[a-fA-F0-9]{40}$/.test(addrRaw)) return null;
-          const type = normalizeNftType(tok?.type);
-          if (!type) return null;
-          const tokenId =
-            typeof it.id === "string"
-              ? it.id
-              : typeof it.id === "number"
-              ? String(it.id)
-              : typeof it?.token_id === "string"
-              ? it.token_id
-              : typeof it?.token_id === "number"
-              ? String(it.token_id)
-              : null;
-          // Blockscout's /tokens endpoint doesn't carry a per-instance id.
-          // Skip those rows — they describe the collection, not a burnable
-          // item.
-          if (!tokenId || !/^[0-9]+$/.test(tokenId)) return null;
-          const balance =
-            typeof it.value === "string"
-              ? it.value
-              : typeof it.value === "number"
-              ? String(it.value)
-              : "1";
-          const meta = it?.metadata ?? it?.token_instance?.metadata;
-          const image =
-            typeof meta?.image === "string"
-              ? meta.image
-              : typeof meta?.image_url === "string"
-              ? meta.image_url
-              : null;
-          return {
-            contractAddress: addrRaw.toLowerCase(),
-            tokenId,
-            type,
-            balance,
-            name:
-              typeof meta?.name === "string"
-                ? meta.name
-                : typeof tok?.name === "string"
-                ? tok.name
-                : null,
-            collectionName:
-              typeof tok?.name === "string" ? tok.name : null,
-            imageUrl: normalizeImage(image),
-          };
-        })
-        .filter((n): n is NonNullable<typeof n> => n !== null)
-        .slice(0, MAX_NFTS);
-
-      const payload = { source: baseUrl, count: nfts.length, nfts };
-      evictCache();
-      cache.set(cacheKey, { at: now, payload });
-      res.json(payload);
-      return;
+      for (const it of collected) {
+        const tok = it?.token ?? it;
+        const addrRaw: unknown = tok?.address_hash ?? tok?.address;
+        if (typeof addrRaw !== "string") continue;
+        if (!/^0x[a-fA-F0-9]{40}$/.test(addrRaw)) continue;
+        const type = normalizeNftType(tok?.type);
+        if (!type) continue;
+        const tokenId =
+          typeof it.id === "string"
+            ? it.id
+            : typeof it.id === "number"
+            ? String(it.id)
+            : typeof it?.token_id === "string"
+            ? it.token_id
+            : typeof it?.token_id === "number"
+            ? String(it.token_id)
+            : null;
+        // Blockscout's /tokens endpoint doesn't carry a per-instance id.
+        // Skip those rows — they describe the collection, not a burnable
+        // item.
+        if (!tokenId || !/^[0-9]+$/.test(tokenId)) continue;
+        const balance =
+          typeof it.value === "string"
+            ? it.value
+            : typeof it.value === "number"
+            ? String(it.value)
+            : "1";
+        const meta = it?.metadata ?? it?.token_instance?.metadata;
+        const image =
+          typeof meta?.image === "string"
+            ? meta.image
+            : typeof meta?.image_url === "string"
+            ? meta.image_url
+            : null;
+        const contractAddress = addrRaw.toLowerCase();
+        const key = `${contractAddress}:${tokenId}`;
+        if (merged.has(key)) continue;
+        merged.set(key, {
+          contractAddress,
+          tokenId,
+          type,
+          balance,
+          name:
+            typeof meta?.name === "string"
+              ? meta.name
+              : typeof tok?.name === "string"
+              ? tok.name
+              : null,
+          collectionName:
+            typeof tok?.name === "string" ? tok.name : null,
+          imageUrl: normalizeImage(image),
+        });
+        if (merged.size >= MAX_NFTS) break;
+      }
+      if (merged.size >= MAX_NFTS) break;
     } catch (err) {
       logger.warn({ err, url: baseUrl }, "explorer NFT fetch failed");
       continue;
     }
   }
 
-  const payload = { source: null, count: 0, nfts: [] as unknown[] };
+  const nfts = Array.from(merged.values()).slice(0, MAX_NFTS);
+  const payload = {
+    source: anyCandidateOk ? lastSource : null,
+    count: nfts.length,
+    nfts,
+  };
   evictCache();
   cache.set(cacheKey, { at: now, payload });
   res.json(payload);

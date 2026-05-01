@@ -62,7 +62,7 @@ export default function LandingPage() {
             <Info className="w-6 h-6" />
           </div>
           <h3 className="text-xl font-medium text-white text-halo-soft">Tokens &amp; NFTs</h3>
-          <p className="text-muted-foreground">Auto‑detect surfaces every ERC‑20, ERC‑721, and ERC‑1155 in your wallet — paste a contract for the obscure ones, then torch them in one batch.</p>
+          <p className="text-muted-foreground">Auto‑detect surfaces every ERC‑20, ERC‑721, and ERC‑1155 in your wallet. Paste a token contract for obscure ERC‑20s the indexer misses, then torch your pile in one batch.</p>
         </div>
       </motion.div>
     </div>
