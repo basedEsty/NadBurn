@@ -49,6 +49,14 @@ const UNISWAP_LIST_URL = "https://tokens.uniswap.org/";
 // CoinGecko doesn't index (Monad testnet today), set to `null` and the
 // fetch is skipped — the resolver falls back to Uniswap's coverage if any,
 // otherwise a neutral mark.
+//
+// Slugs verified against https://api.coingecko.com/api/v3/asset_platforms
+// (look for `chain_identifier === <our chainId>`). Last verified 2026-05-01:
+//   • chain 1   → "ethereum"
+//   • chain 143 → "monad"   (https://tokens.coingecko.com/monad/all.json
+//                            returns ~70 ERC-20s with logos: WMON, USDC,
+//                            USDT, WBTC, WETH, aprMON, shMON, …)
+//   • chain 10143 (Monad testnet) → not indexed by CoinGecko
 const COINGECKO_PLATFORM_BY_CHAIN: Record<number, string | null> = {
   1: "ethereum",
   143: "monad",
@@ -59,7 +67,13 @@ function coingeckoListUrl(platform: string): string {
   return `https://tokens.coingecko.com/${platform}/all.json`;
 }
 
-const STORAGE_KEY = "nb_token_logo_map_v2";
+// Bumped to v3 (was v2) on 2026-05-01: prior cached entries on Monad
+// mainnet (chainId 143) may have been written before the CoinGecko
+// "monad" platform list was confirmed available, so any client with a
+// stale v2 cache could be missing real logos for WMON/USDC/USDT/etc.
+// Bumping the key forces a one-time refetch instead of waiting on the
+// 24h TTL.
+const STORAGE_KEY = "nb_token_logo_map_v3";
 const TTL_MS = 24 * 60 * 60 * 1000; // 24h
 
 // Native (gas) token logos by chain ID.
