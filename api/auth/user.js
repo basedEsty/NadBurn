@@ -1,10 +1,9 @@
 /**
  * Stub for the legacy Replit auth endpoint. The dApp doesn't actually
  * require login on Vercel — it's purely wallet-based — so we return a
- * clean "not authenticated" response and let the frontend continue.
+ * clean "anonymous" 200 response and let the frontend continue.
  *
- * This kills the 404 console noise from /api/auth/user that the
- * `@workspace/replit-auth-web` provider polls for.
+ * Returning 200 (instead of 401) keeps the browser console silent.
  */
 
 const ALLOWED_ORIGINS = new Set([
@@ -21,11 +20,9 @@ export default function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Cache-Control', 'no-store');
 
   if (req.method === 'OPTIONS') { res.status(200).end(); return; }
 
-  // 401 is the standard "not authenticated" response — the frontend
-  // expects this and treats it as "user is anonymous, show the connect-
-  // wallet flow" rather than throwing an error.
-  res.status(401).json({ user: null, authenticated: false });
+  res.status(200).json({ user: null, authenticated: false });
 }
