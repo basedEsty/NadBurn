@@ -5,6 +5,10 @@
  * Wallet identity comes from the SIWE session cookie. Anonymous calls work
  * for backward-compat (POST still fires Discord webhook + returns the item)
  * but won't be persisted to the user's history.
+ *
+ * Now supports both ERC-20 and NFT (ERC-721 / ERC-1155) burns. NFT-specific
+ * fields (tokenType, tokenId, collectionName) are optional — when absent the
+ * burn is treated as a fungible token transfer.
  */
 
 import { applyCors, readSession, supabase } from './_lib/auth.js';
@@ -14,26 +18,46 @@ const WEBHOOK_URL =
 const MONAD_EXPLORER = 'https://explorer.monad.xyz/tx';
 
 async function notifyDiscord(item) {
-  const raw = Number(item.amount) / Math.pow(10, item.tokenDecimals ?? 18);
-  const amount = raw.toLocaleString('en-US', { maximumFractionDigits: 6 });
-  const modeLabel = item.mode === 'recover' ? '♻️ Recover' : '🔥 Pure Burn';
+  const isNft = item.tokenType === 'erc721' || item.tokenType === 'erc1155';
   const txUrl = `${MONAD_EXPLORER}/${item.txHash}`;
 
-  const fields = [
-    { name: 'Token',   value: item.tokenSymbol, inline: true },
-    { name: 'Amount',  value: amount,            inline: true },
-    { name: 'Mode',    value: modeLabel,         inline: true },
-    { name: 'Tx Hash', value: `[${item.txHash.slice(0, 10)}…](${txUrl})`, inline: false },
-  ];
-  if (item.recoveredNative) {
-    fields.push({ name: 'MON Recovered', value: `${(Number(item.recoveredNative) / 1e18).toFixed(6)} MON`, inline: true });
+  let title, fields;
+  if (isNft) {
+    const label = item.collectionName
+      ? `${item.collectionName} #${item.tokenId}`
+      : `${item.tokenSymbol} #${item.tokenId}`;
+    title = `🔥 ${label} Burned`;
+    fields = [
+      { name: 'Collection', value: item.collectionName || item.tokenSymbol, inline: true },
+      { name: 'Token ID',   value: `#${item.tokenId}`, inline: true },
+      { name: 'Standard',   value: item.tokenType.toUpperCase(), inline: true },
+      { name: 'Tx Hash',    value: `[${item.txHash.slice(0, 10)}…](${txUrl})`, inline: false },
+    ];
+    if (item.tokenType === 'erc1155' && item.amount && item.amount !== '1') {
+      fields.splice(2, 0, { name: 'Amount', value: `×${item.amount}`, inline: true });
+    }
+  } else {
+    const raw = Number(item.amount) / Math.pow(10, item.tokenDecimals ?? 18);
+    const amount = raw.toLocaleString('en-US', { maximumFractionDigits: 6 });
+    const modeLabel = item.mode === 'recover' ? '♻️ Recover' : '🔥 Pure Burn';
+    title = `🔥 ${amount} ${item.tokenSymbol} Burned`;
+    fields = [
+      { name: 'Token',   value: item.tokenSymbol, inline: true },
+      { name: 'Amount',  value: amount,            inline: true },
+      { name: 'Mode',    value: modeLabel,         inline: true },
+      { name: 'Tx Hash', value: `[${item.txHash.slice(0, 10)}…](${txUrl})`, inline: false },
+    ];
+    if (item.recoveredNative) {
+      fields.push({ name: 'MON Recovered', value: `${(Number(item.recoveredNative) / 1e18).toFixed(6)} MON`, inline: true });
+    }
   }
+
   if (item.walletAddress) {
     fields.push({ name: 'Burner', value: `\`${item.walletAddress.slice(0, 6)}…${item.walletAddress.slice(-4)}\``, inline: true });
   }
 
   const embed = {
-    title: `🔥 ${amount} ${item.tokenSymbol} Burned`,
+    title,
     color: 0xff4500,
     fields,
     footer: { text: 'nadburn.xyz • burn it all' },
@@ -58,14 +82,9 @@ export default async function handler(req, res) {
 
   const session = readSession(req);
 
-  // ─── GET /api/burn-history → user's history (auth required) ──────
+  // ─── GET /api/burn-history → user's history ──────────────────────
   if (req.method === 'GET') {
-    if (!session) {
-      // Backward-compat: return empty list rather than 401 so older clients
-      // don't error out. The history panel will just show empty.
-      res.status(200).json({ items: [] });
-      return;
-    }
+    if (!session) { res.status(200).json({ items: [] }); return; }
     try {
       const rows = await supabase(
         `/burns?wallet_address=eq.${session.walletAddress}&select=*&order=created_at.desc&limit=100`,
@@ -82,6 +101,10 @@ export default async function handler(req, res) {
         txHash:          r.tx_hash,
         recoveredNative: r.recovered_native,
         createdAt:       r.created_at,
+        // NFT fields — null for ERC-20 rows, populated for NFT burns.
+        tokenType:       r.token_type,
+        tokenId:         r.token_id,
+        collectionName:  r.collection_name,
       }));
       res.status(200).json({ items });
       return;
@@ -92,13 +115,18 @@ export default async function handler(req, res) {
     }
   }
 
-  // ─── POST /api/burn-history → record a new burn ────────────────
+  // ─── POST /api/burn-history → record a new burn ─────────────────
   if (req.method === 'POST') {
     const data = req.body;
     if (!data?.txHash || !data?.tokenSymbol || !data?.amount) {
       res.status(400).json({ error: 'Missing required fields' });
       return;
     }
+
+    // Normalize tokenType — assume erc20 if not supplied.
+    const tokenType = ['erc20', 'erc721', 'erc1155'].includes(data.tokenType)
+      ? data.tokenType
+      : 'erc20';
 
     const item = {
       id:              crypto.randomUUID(),
@@ -112,10 +140,11 @@ export default async function handler(req, res) {
       recoveredNative: data.recoveredNative ?? null,
       createdAt:       new Date().toISOString(),
       walletAddress:   session?.walletAddress ?? null,
+      tokenType,
+      tokenId:         typeof data.tokenId === 'string' ? data.tokenId : null,
+      collectionName:  typeof data.collectionName === 'string' ? data.collectionName : null,
     };
 
-    // Persist to Supabase only when authenticated. Don't block on it —
-    // Discord notification matters more for the user feeling confirmed.
     if (session) {
       try {
         await supabase('/burns', {
@@ -130,6 +159,9 @@ export default async function handler(req, res) {
             mode:             item.mode,
             tx_hash:          item.txHash,
             recovered_native: item.recoveredNative,
+            token_type:       item.tokenType,
+            token_id:         item.tokenId,
+            collection_name:  item.collectionName,
           }),
         });
       } catch (err) {
@@ -137,7 +169,6 @@ export default async function handler(req, res) {
       }
     }
 
-    // Always fire Discord — even for anonymous burns
     try {
       await notifyDiscord(item);
     } catch (err) {
