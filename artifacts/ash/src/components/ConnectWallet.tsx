@@ -31,9 +31,18 @@ export default function ConnectWallet() {
   if (isConnected && address) {
     return (
       <div className="flex items-center gap-2">
+        {/*
+          Chain switcher pill — visible only on `sm+`. On mobile it's
+          collapsed into the wallet dropdown below so the header reduces
+          to a single pill on the right.
+        */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="border-white/10 bg-white/5 hover:bg-white/10">
+            <Button
+              variant="outline"
+              size="sm"
+              className="hidden sm:inline-flex border-white/10 bg-white/5 hover:bg-white/10"
+            >
               <Globe className="mr-2 h-4 w-4 text-primary" />
               {currentChain?.name ?? "Unknown Chain"}
             </Button>
@@ -59,6 +68,32 @@ export default function ConnectWallet() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56 bg-card border-white/10 text-white">
+            {/*
+              Mobile-only network switcher. The dedicated chain pill
+              above is hidden on `< sm`, so we surface the same chain
+              options here. Hidden on desktop where the chain pill
+              already covers it.
+            */}
+            <DropdownMenuLabel className="sm:hidden flex items-center gap-2 text-xs font-normal text-muted-foreground">
+              <Globe className="h-3 w-3 text-primary" />
+              <span className="truncate">
+                {currentChain?.name ?? "Unknown Chain"}
+              </span>
+            </DropdownMenuLabel>
+            {chains.map((c) => (
+              <DropdownMenuItem
+                key={c.id}
+                onClick={() => switchChain({ chainId: c.id })}
+                className="sm:hidden cursor-pointer focus:bg-white/10 pl-6"
+              >
+                {c.name}
+                {c.id === chainId ? (
+                  <span className="ml-auto text-xs text-primary">•</span>
+                ) : null}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator className="sm:hidden bg-white/10" />
+
             {/*
               Mobile-only Discord controls. On desktop these are hidden
               because the dedicated `<DiscordPill />` in the navbar covers
