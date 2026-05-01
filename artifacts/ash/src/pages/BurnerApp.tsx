@@ -47,23 +47,19 @@ import HistoryPanel from "@/components/HistoryPanel";
 import { ConfirmBurnDialog, type ConfirmTokenLine } from "@/components/ConfirmBurnDialog";
 import { api } from "@/lib/api";
 import { apiUrl } from "@/lib/api-base";
+import { getTokenLogo, fallbackTokenLogo } from "@/lib/token-logos";
 
-// Returns a logo URL for a token. TrustWallet for chains it supports,
-// otherwise a deterministic identicon so every token has a recognizable image.
+// Resolves a token logo. Uses Uniswap's official default token list (cached
+// from tokens.uniswap.org), with deterministic dicebear fallback for tokens
+// the list doesn't know about.
 function getTokenLogoUrl(chainId: number, address: string): string {
   if (address === "native") {
-    if (chainId === 1) return "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png";
+    // Native gas tokens use a chain-keyed seed so MON / ETH have distinct icons
     return `https://api.dicebear.com/7.x/shapes/svg?seed=native-${chainId}&backgroundColor=7c3aed`;
   }
-  const TRUSTWALLET_CHAIN: Record<number, string> = {
-    1: "ethereum",
-  };
-  const slug = TRUSTWALLET_CHAIN[chainId];
-  const checksumish = address.toLowerCase();
-  if (slug) {
-    return `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${slug}/assets/${checksumish}/logo.png`;
-  }
-  return `https://api.dicebear.com/7.x/shapes/svg?seed=${checksumish}&backgroundColor=7c3aed,a855f7,ec4899`;
+  const fromUniswap = getTokenLogo(chainId, address);
+  if (fromUniswap) return fromUniswap;
+  return fallbackTokenLogo(address);
 }
 
 interface TokenBalance {
