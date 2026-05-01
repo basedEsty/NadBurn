@@ -66,6 +66,26 @@ export const monadMainnet = defineChain({
   },
 });
 
+// Monad testnet — chain ID 10143. Backed by the official testnet RPC and
+// the testnet shard of Monad Explorer (Blockscout-compatible). Included so
+// users running on testnet can exercise the burn flow (tokens + NFTs) the
+// same way they would on mainnet.
+export const monadTestnet = defineChain({
+  id: 10143,
+  name: "Monad Testnet",
+  nativeCurrency: { name: "Monad", symbol: "MON", decimals: 18 },
+  rpcUrls: {
+    default: { http: ["https://testnet-rpc.monad.xyz"] },
+  },
+  blockExplorers: {
+    default: {
+      name: "Monad Explorer (Testnet)",
+      url: "https://testnet.monadexplorer.com",
+    },
+  },
+  testnet: true,
+});
+
 // Production RPC URLs come from env so we don't ship a free public endpoint
 // that gets rate-limited the moment real users show up. Falling back to the
 // public RPC keeps local dev working without forcing an Alchemy/Infura key.
@@ -132,7 +152,7 @@ if (WC_PROJECT_ID) {
 // Chain order matters — wagmi treats the first entry as the initial /
 // default chain when a wallet first connects. Monad mainnet leads.
 export const wagmiConfig = createConfig({
-  chains: [monadMainnet, mainnet],
+  chains: [monadMainnet, mainnet, monadTestnet],
   connectors,
   transports: {
     // Prefer the user's RPC, but always keep the public endpoint as a backup
@@ -147,5 +167,6 @@ export const wagmiConfig = createConfig({
       ).map((url) => http(url)),
     ),
     [mainnet.id]: MAINNET_RPC ? fallback([http(MAINNET_RPC), http()]) : http(),
+    [monadTestnet.id]: http("https://testnet-rpc.monad.xyz"),
   },
 });

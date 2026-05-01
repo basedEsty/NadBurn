@@ -133,10 +133,14 @@ async function fetchWalletTokenAddresses(
 
 // Chains the app actually understands. Anything outside this list shows a
 // "switch network" banner because we have no DEX/explorer/burn wiring for it.
-const SUPPORTED_CHAIN_IDS = [143, 1] as const;
+// Monad testnet (10143) is included for the burn flow (tokens + NFTs); the
+// Recover-into-MON path on testnet has no DEX wiring so users on 10143 see
+// burn-only just like on Ethereum mainnet.
+const SUPPORTED_CHAIN_IDS = [143, 1, 10143] as const;
 const SUPPORTED_CHAIN_LABELS: Record<number, string> = {
   1: "Ethereum",
   143: "Monad",
+  10143: "Monad Testnet",
 };
 
 // Native gas-token symbol per chain. Used in UI strings for the "Recover X"
@@ -145,6 +149,7 @@ const SUPPORTED_CHAIN_LABELS: Record<number, string> = {
 const NATIVE_SYMBOL: Record<number, string> = {
   1: "ETH",
   143: "MON",
+  10143: "MON",
 };
 
 export default function BurnerApp() {
