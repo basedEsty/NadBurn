@@ -250,10 +250,28 @@ router.get("/explorer/tokens", async (req: Request, res: Response) => {
       // Normalize both response shapes:
       //   /token-balances -> [{ token: {...}, value: "..." }, ...]
       //   /tokens         -> { items: [{ token: {...}, value: "..." }, ...], next_page_params }
-      const items: any[] = Array.isArray(raw)
-        ? raw
-        : Array.isArray((raw as any)?.items)
-        ? (raw as any).items
+      type BlockscoutTokenItem = {
+        token?: {
+          address_hash?: unknown;
+          address?: unknown;
+          symbol?: unknown;
+          name?: unknown;
+          decimals?: unknown;
+          icon_url?: unknown;
+          type?: unknown;
+        };
+        value?: unknown;
+      };
+      const isObjectWithItems = (
+        v: unknown,
+      ): v is { items: BlockscoutTokenItem[] } =>
+        typeof v === "object" &&
+        v !== null &&
+        Array.isArray((v as { items?: unknown }).items);
+      const items: BlockscoutTokenItem[] = Array.isArray(raw)
+        ? (raw as BlockscoutTokenItem[])
+        : isObjectWithItems(raw)
+        ? raw.items
         : [];
 
       const tokens = items
@@ -319,10 +337,49 @@ type BlockvisionNftResponse = {
     | BlockvisionNft[];
 };
 
-// Cap how many NFTs we forward to the client. NFT scans on whales can be
-// thousands of items — burn UX is multi-select per-burn so a hard cap keeps
-// the UI render fast without losing meaningful coverage.
-const MAX_NFTS = 500;
+// Safety ceiling so a misbehaving indexer (infinite "next" links, etc.)
+// can't OOM the server or the browser. Real wallets, including whale
+// collectors, are well under this. Not a product cap — pagination loops
+// continue until either the upstream signals no more pages or this guard
+// fires.
+const MAX_NFTS = 5000;
+// Cap how many pagination round-trips we'll make per request, defense in
+// depth against a malformed indexer that always returns a next-page
+// pointer. Page sizes default to 100 so 50 pages × 100 = 5000 ceiling.
+const MAX_NFT_PAGES = 50;
+const NFT_PAGE_SIZE = 100;
+
+// Narrow shape we accept from Blockscout's NFT endpoints. Blockscout has
+// two response variants: /addresses/{addr}/nft returns NFT instances with
+// metadata + a value; /addresses/{addr}/tokens with type filter returns
+// token holdings (may lack per-instance ids). Both are normalized below.
+type BlockscoutNftItem = {
+  id?: string | number;
+  token_id?: string | number;
+  value?: string | number;
+  metadata?: { name?: unknown; image?: unknown; image_url?: unknown };
+  token_instance?: {
+    metadata?: { name?: unknown; image?: unknown; image_url?: unknown };
+  };
+  token?: {
+    address_hash?: unknown;
+    address?: unknown;
+    type?: unknown;
+    name?: unknown;
+  };
+  address_hash?: unknown;
+  address?: unknown;
+  type?: unknown;
+  name?: unknown;
+};
+type BlockscoutNftPage = {
+  items?: BlockscoutNftItem[];
+  next_page_params?: Record<string, unknown> | null;
+};
+
+function isBlockscoutNftPage(value: unknown): value is BlockscoutNftPage {
+  return typeof value === "object" && value !== null && "items" in value;
+}
 
 function normalizeNftType(raw: unknown): "erc721" | "erc1155" | null {
   const s = typeof raw === "string" ? raw.toUpperCase().replace(/[-_]/g, "") : "";
@@ -383,37 +440,69 @@ router.get("/explorer/nfts", async (req: Request, res: Response) => {
       return;
     }
     try {
-      const url = `${BLOCKVISION_BASE}/v2/monad/account/nfts?address=${address}&pageSize=${MAX_NFTS}`;
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 10_000);
-      const r = await fetch(url, {
-        headers: { accept: "application/json", "x-api-key": apiKey },
-        signal: controller.signal,
-      });
-      clearTimeout(timer);
-      if (!r.ok) {
-        logger.warn(
-          { status: r.status, url },
-          "Blockvision Monad nfts upstream non-2xx",
-        );
-        res.json({
-          source: "blockvision-error",
-          status: r.status,
-          count: 0,
-          nfts: [] as unknown[],
+      // Page through Blockvision until cursor exhausts or safety caps fire.
+      // Blockvision returns `result.nextPageIndex` (or sometimes a cursor)
+      // when more data is available. We accept either by reading whatever
+      // `nextPageIndex` field the API echoes back.
+      const collected: BlockvisionNft[] = [];
+      let pageIndex: string | number | undefined = 1;
+      for (
+        let page = 0;
+        page < MAX_NFT_PAGES && collected.length < MAX_NFTS;
+        page++
+      ) {
+        const url =
+          `${BLOCKVISION_BASE}/v2/monad/account/nfts?address=${address}` +
+          `&pageSize=${NFT_PAGE_SIZE}&pageIndex=${pageIndex ?? 1}`;
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 10_000);
+        const r = await fetch(url, {
+          headers: { accept: "application/json", "x-api-key": apiKey },
+          signal: controller.signal,
         });
-        return;
+        clearTimeout(timer);
+        if (!r.ok) {
+          logger.warn(
+            { status: r.status, url, page },
+            "Blockvision Monad nfts upstream non-2xx",
+          );
+          // First page failure → bubble up an error payload. Mid-pagination
+          // failure → stop here and return what we already have so the
+          // user still sees the partial scan.
+          if (page === 0) {
+            res.json({
+              source: "blockvision-error",
+              status: r.status,
+              count: 0,
+              nfts: [] as unknown[],
+            });
+            return;
+          }
+          break;
+        }
+        const raw = (await readJsonWithLimit(
+          r,
+          MAX_RESPONSE_BYTES,
+        )) as BlockvisionNftResponse & {
+          result?: { nextPageIndex?: string | number; total?: number };
+        };
+        const result = raw?.result;
+        const items: BlockvisionNft[] = Array.isArray(result)
+          ? result
+          : Array.isArray(result?.data)
+          ? result.data
+          : [];
+        if (items.length === 0) break;
+        collected.push(...items);
+        const nextIndex =
+          result && !Array.isArray(result)
+            ? (result as { nextPageIndex?: string | number }).nextPageIndex
+            : undefined;
+        if (!nextIndex || nextIndex === pageIndex) break;
+        pageIndex = nextIndex;
       }
-      const raw = (await readJsonWithLimit(
-        r,
-        MAX_RESPONSE_BYTES,
-      )) as BlockvisionNftResponse;
-      const items: BlockvisionNft[] = Array.isArray(raw?.result)
-        ? raw.result
-        : Array.isArray(raw?.result?.data)
-        ? raw.result.data
-        : [];
-      const nfts = items
+
+      const nfts = collected
         .map((it) => {
           const addr =
             typeof it.contractAddress === "string"
@@ -473,37 +562,76 @@ router.get("/explorer/nfts", async (req: Request, res: Response) => {
   // ─── Blockscout-compatible chains (Ethereum / Monad testnet) ───────
   const base = EXPLORER_BASE[chainId];
   // Blockscout exposes NFTs via /addresses/{addr}/nft. The `?type=` filter
-  // accepts a comma-separated list. Some shards return a paginated `items`
-  // shape, others return a bare array.
+  // accepts a comma-separated list. Some shards return a paginated
+  // `{items, next_page_params}` shape, others return a bare array.
   const candidates = [
     `${base}/api/v2/addresses/${address}/nft?type=ERC-721,ERC-1155`,
     `${base}/api/v2/addresses/${address}/tokens?type=ERC-721,ERC-1155`,
   ];
 
-  for (const url of candidates) {
+  for (const baseUrl of candidates) {
     try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 8000);
-      const r = await fetch(url, {
-        headers: { accept: "application/json" },
-        signal: controller.signal,
-      });
-      clearTimeout(timer);
-      if (!r.ok) continue;
-      const contentLength = r.headers.get("content-length");
-      if (contentLength !== null && Number(contentLength) > MAX_RESPONSE_BYTES) {
-        logger.warn({ url, contentLength }, "explorer NFT response too large, skipping");
-        continue;
+      const collected: BlockscoutNftItem[] = [];
+      let nextPageParams: Record<string, unknown> | null | undefined =
+        undefined;
+      let firstPageOk = false;
+
+      for (
+        let page = 0;
+        page < MAX_NFT_PAGES && collected.length < MAX_NFTS;
+        page++
+      ) {
+        const url =
+          page === 0 || !nextPageParams
+            ? baseUrl
+            : `${baseUrl}&${new URLSearchParams(
+                Object.entries(nextPageParams).map(([k, v]) => [
+                  k,
+                  String(v),
+                ]),
+              ).toString()}`;
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 8000);
+        const r = await fetch(url, {
+          headers: { accept: "application/json" },
+          signal: controller.signal,
+        });
+        clearTimeout(timer);
+        if (!r.ok) {
+          if (page === 0) break; // try next candidate
+          break; // mid-pagination upstream failure → keep partial
+        }
+        const contentLength = r.headers.get("content-length");
+        if (
+          contentLength !== null &&
+          Number(contentLength) > MAX_RESPONSE_BYTES
+        ) {
+          logger.warn(
+            { url, contentLength },
+            "explorer NFT response too large, skipping page",
+          );
+          break;
+        }
+
+        const raw: unknown = await readJsonWithLimit(r, MAX_RESPONSE_BYTES);
+        const pageItems: BlockscoutNftItem[] = Array.isArray(raw)
+          ? (raw as BlockscoutNftItem[])
+          : isBlockscoutNftPage(raw) && Array.isArray(raw.items)
+          ? raw.items
+          : [];
+        firstPageOk = firstPageOk || page === 0;
+        if (pageItems.length === 0) break;
+        collected.push(...pageItems);
+        // Bare-array responses don't paginate.
+        if (!isBlockscoutNftPage(raw)) break;
+        nextPageParams = raw.next_page_params ?? null;
+        if (!nextPageParams) break;
       }
 
-      const raw: unknown = await readJsonWithLimit(r, MAX_RESPONSE_BYTES);
-      const items: any[] = Array.isArray(raw)
-        ? raw
-        : Array.isArray((raw as any)?.items)
-        ? (raw as any).items
-        : [];
+      // No data and first page didn't succeed → try the other candidate.
+      if (collected.length === 0 && !firstPageOk) continue;
 
-      const nfts = items
+      const nfts = collected
         .map((it) => {
           const tok = it?.token ?? it;
           const addrRaw: unknown = tok?.address_hash ?? tok?.address;
@@ -557,13 +685,13 @@ router.get("/explorer/nfts", async (req: Request, res: Response) => {
         .filter((n): n is NonNullable<typeof n> => n !== null)
         .slice(0, MAX_NFTS);
 
-      const payload = { source: url, count: nfts.length, nfts };
+      const payload = { source: baseUrl, count: nfts.length, nfts };
       evictCache();
       cache.set(cacheKey, { at: now, payload });
       res.json(payload);
       return;
     } catch (err) {
-      logger.warn({ err, url }, "explorer NFT fetch failed");
+      logger.warn({ err, url: baseUrl }, "explorer NFT fetch failed");
       continue;
     }
   }

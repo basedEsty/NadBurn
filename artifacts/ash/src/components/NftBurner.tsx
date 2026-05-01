@@ -331,10 +331,21 @@ export function NftBurner({ chainId, isSupportedChain }: NftBurnerProps) {
               collectionName: nft.collectionName,
             })
             .catch(() => undefined);
-        } catch (err: any) {
+        } catch (err: unknown) {
           failed += 1;
-          const detail =
-            err?.shortMessage || err?.message || "Reverted";
+          // viem throws subclasses of Error that expose `shortMessage` in
+          // addition to `message`. Narrow defensively without `any`.
+          let detail = "Reverted";
+          if (err instanceof Error) {
+            const maybeShort = (err as Error & { shortMessage?: unknown })
+              .shortMessage;
+            detail =
+              typeof maybeShort === "string" && maybeShort.length > 0
+                ? maybeShort
+                : err.message || detail;
+          } else if (typeof err === "string" && err.length > 0) {
+            detail = err;
+          }
           updateStep(stepId, { status: "failed", detail });
         }
       }
