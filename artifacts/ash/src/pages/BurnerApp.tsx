@@ -45,6 +45,7 @@ import { BurnProgress, type ProgressStep } from "@/components/BurnProgress";
 import { SignInButton } from "@/components/SignInButton";
 import HistoryPanel from "@/components/HistoryPanel";
 import { ConfirmBurnDialog, type ConfirmTokenLine } from "@/components/ConfirmBurnDialog";
+import { DiscordLinkCard } from "@/components/DiscordLinkCard";
 import { api } from "@/lib/api";
 import { apiUrl } from "@/lib/api-base";
 import { getTokenLogo, fallbackTokenLogo } from "@/lib/token-logos";
