@@ -17,7 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Flame, Wallet, Plus, Loader2, AlertCircle, Sparkles, RefreshCw, Coins, Star } from "lucide-react";
+import { Flame, Wallet, Plus, Loader2, AlertCircle, Sparkles, RefreshCw, Coins, Star, Image as ImageIcon } from "lucide-react";
 import {
   BURN_ADDRESS,
   ERC20_ABI,
@@ -44,6 +44,7 @@ import { FireParticles } from "@/components/FireParticles";
 import { BurnProgress, type ProgressStep } from "@/components/BurnProgress";
 import HistoryPanel from "@/components/HistoryPanel";
 import { ConfirmBurnDialog, type ConfirmTokenLine } from "@/components/ConfirmBurnDialog";
+import { NftBurner } from "@/components/NftBurner";
 import { api } from "@/lib/api";
 import { apiUrl } from "@/lib/api-base";
 import { getTokenLogo, fallbackTokenLogo } from "@/lib/token-logos";
@@ -70,6 +71,7 @@ interface TokenBalance {
 }
 
 type BurnMode = "burn" | "recover";
+type AssetMode = "tokens" | "nfts";
 
 async function fetchAutoTokenList(chainId: number): Promise<`0x${string}`[]> {
   try {
@@ -225,6 +227,7 @@ export default function BurnerApp() {
     Record<string, TokenBalance>
   >({});
   const [mode, setMode] = useState<BurnMode>("burn");
+  const [assetMode, setAssetMode] = useState<AssetMode>("tokens");
   const [quotes, setQuotes] = useState<Record<string, bigint>>({});
   // Per-token reason a quote came back zero. We surface this in the UI so
   // the user knows whether it's "Uniswap doesn't have a pool for this token"
@@ -868,6 +871,14 @@ export default function BurnerApp() {
   const [progressFinished, setProgressFinished] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
+  // Reset token-side modals + transient progress whenever the user switches
+  // to NFT mode (and vice versa). Without this, a half-open ConfirmBurnDialog
+  // from the token flow would still render once the user toggles to NFTs.
+  useEffect(() => {
+    setConfirmOpen(false);
+    setProgressOpen(false);
+  }, [assetMode]);
+
   const confirmTokens = useMemo<ConfirmTokenLine[]>(() => {
     return Array.from(selectedTokens)
       .map(
@@ -1439,6 +1450,36 @@ export default function BurnerApp() {
           </div>
         )}
 
+        {/* Asset toggle: ERC-20 tokens vs NFTs. Switching to NFTs swaps in
+            the dedicated NftBurner surface below (and hides the burn/recover
+            mode toggle, since recovery doesn't apply to NFTs). */}
+        <div className="flex p-1 rounded-xl bg-white/5 border border-white/10 max-w-sm mx-auto">
+          <button
+            onClick={() => setAssetMode("tokens")}
+            className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+              assetMode === "tokens"
+                ? "bg-primary text-white shadow-[0_0_12px_rgba(168,85,247,0.4)]"
+                : "text-muted-foreground hover:text-white"
+            }`}
+          >
+            <Coins className="w-4 h-4" /> Tokens
+          </button>
+          <button
+            onClick={() => setAssetMode("nfts")}
+            className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+              assetMode === "nfts"
+                ? "bg-primary text-white shadow-[0_0_12px_rgba(168,85,247,0.4)]"
+                : "text-muted-foreground hover:text-white"
+            }`}
+          >
+            <ImageIcon className="w-4 h-4" /> NFTs
+          </button>
+        </div>
+
+        {assetMode === "nfts" ? (
+          <NftBurner chainId={chainId} isSupportedChain={isSupportedChain} />
+        ) : (
+          <>
         {/* Mode toggle */}
         <div className="flex p-1 rounded-xl bg-white/5 border border-white/10 max-w-sm mx-auto">
           <button
@@ -1790,30 +1831,40 @@ export default function BurnerApp() {
             {mode === "recover" ? `Recover ${nativeSymbol ?? "Native"}` : "Burn Selected"}
           </Button>
         </div>
+          </>
+        )}
       </div>
 
-      <ConfirmBurnDialog
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        mode={mode}
-        nativeSymbol={nativeSymbol ?? "native"}
-        feeWei={recoveryFeeWei}
-        willChargeFee={willChargeFee}
-        tokens={confirmTokens}
-        totalRecoveryEstimate={totalRecoveryEstimate}
-        onConfirm={() => {
-          setConfirmOpen(false);
-          void handleAction();
-        }}
-      />
+      {/* Token-flow dialogs only render in tokens mode. NftBurner owns its
+          own confirm + progress UI when in NFTs mode, and we don't want
+          the token state machinery (confirmTokens / progressSteps) to
+          surface dialogs on top of it. */}
+      {assetMode === "tokens" && (
+        <>
+          <ConfirmBurnDialog
+            open={confirmOpen}
+            onOpenChange={setConfirmOpen}
+            mode={mode}
+            nativeSymbol={nativeSymbol ?? "native"}
+            feeWei={recoveryFeeWei}
+            willChargeFee={willChargeFee}
+            tokens={confirmTokens}
+            totalRecoveryEstimate={totalRecoveryEstimate}
+            onConfirm={() => {
+              setConfirmOpen(false);
+              void handleAction();
+            }}
+          />
 
-      <BurnProgress
-        open={progressOpen}
-        steps={progressSteps}
-        finished={progressFinished}
-        chainId={chainId}
-        onClose={() => setProgressOpen(false)}
-      />
+          <BurnProgress
+            open={progressOpen}
+            steps={progressSteps}
+            finished={progressFinished}
+            chainId={chainId}
+            onClose={() => setProgressOpen(false)}
+          />
+        </>
+      )}
     </div>
   );
 }

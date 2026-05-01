@@ -10,6 +10,12 @@ export type BurnHistoryItem = {
   mode: "burn" | "recover" | string;
   txHash: string;
   recoveredNative: string | null;
+  // NFT support: legacy ERC-20 rows omit these (server defaults to "erc20"
+  // and nulls). NFT rows carry the standard, the per-token id, and the
+  // collection name when the indexer surfaced one.
+  tokenType?: "erc20" | "erc721" | "erc1155";
+  tokenId?: string | null;
+  collectionName?: string | null;
   createdAt: string;
 };
 

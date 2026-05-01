@@ -293,4 +293,285 @@ router.get("/explorer/tokens", async (req: Request, res: Response) => {
   res.json(payload);
 });
 
+// ─── NFT discovery ──────────────────────────────────────────────────────
+//
+// Mirrors /explorer/tokens but for ERC-721 + ERC-1155. Same chain matrix,
+// caching, byte caps, and missing-key payload contract so the frontend can
+// reuse its UX patterns. Normalized output shape:
+//   { source, count, nfts: [{ contractAddress, tokenId, type,
+//                             balance, name?, collectionName?, imageUrl? }] }
+type BlockvisionNft = {
+  contractAddress?: string;
+  tokenId?: string | number;
+  ercStandard?: string;     // "ERC721" | "ERC1155"
+  qty?: string | number;    // ERC-1155 owned amount
+  name?: string;            // token (item) name
+  image?: string;
+  imageUrl?: string;
+  collectionName?: string;
+  collection?: { name?: string };
+};
+type BlockvisionNftResponse = {
+  code?: number;
+  message?: string;
+  result?:
+    | { data?: BlockvisionNft[]; collections?: unknown[] }
+    | BlockvisionNft[];
+};
+
+// Cap how many NFTs we forward to the client. NFT scans on whales can be
+// thousands of items — burn UX is multi-select per-burn so a hard cap keeps
+// the UI render fast without losing meaningful coverage.
+const MAX_NFTS = 500;
+
+function normalizeNftType(raw: unknown): "erc721" | "erc1155" | null {
+  const s = typeof raw === "string" ? raw.toUpperCase().replace(/[-_]/g, "") : "";
+  if (s.includes("1155")) return "erc1155";
+  if (s.includes("721")) return "erc721";
+  return null;
+}
+
+// Lift IPFS / arweave URIs to a public gateway so the browser can render
+// them. We don't proxy the binary — just rewrite the scheme.
+function normalizeImage(raw: unknown): string | null {
+  if (typeof raw !== "string" || raw.length === 0) return null;
+  if (raw.startsWith("ipfs://")) {
+    return `https://ipfs.io/ipfs/${raw.slice("ipfs://".length).replace(/^ipfs\//, "")}`;
+  }
+  if (raw.startsWith("ar://")) {
+    return `https://arweave.net/${raw.slice("ar://".length)}`;
+  }
+  if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
+  return null;
+}
+
+router.get("/explorer/nfts", async (req: Request, res: Response) => {
+  const chainId = Number(req.query.chainId);
+  const address = String(req.query.address ?? "");
+  if (
+    !Number.isInteger(chainId) ||
+    (!EXPLORER_BASE[chainId] && chainId !== 143)
+  ) {
+    res.status(400).json({ error: "Unsupported chainId" });
+    return;
+  }
+  if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
+    res.status(400).json({ error: "Invalid address" });
+    return;
+  }
+  const cacheKey = `nfts:${chainId}:${address.toLowerCase()}`;
+  const now = Date.now();
+  const cached = cache.get(cacheKey);
+  if (cached && now - cached.at < CACHE_MS) {
+    res.json(cached.payload);
+    return;
+  }
+
+  // ─── Monad mainnet via Blockvision ──────────────────────────────────
+  if (chainId === 143) {
+    const apiKey = process.env.BLOCKVISION_API_KEY;
+    if (!apiKey) {
+      const payload = {
+        source: "missing-key",
+        code: "MISSING_BLOCKVISION_API_KEY",
+        count: 0,
+        nfts: [] as unknown[],
+      };
+      evictCache();
+      cache.set(cacheKey, { at: now, payload });
+      res.json(payload);
+      return;
+    }
+    try {
+      const url = `${BLOCKVISION_BASE}/v2/monad/account/nfts?address=${address}&pageSize=${MAX_NFTS}`;
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 10_000);
+      const r = await fetch(url, {
+        headers: { accept: "application/json", "x-api-key": apiKey },
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+      if (!r.ok) {
+        logger.warn(
+          { status: r.status, url },
+          "Blockvision Monad nfts upstream non-2xx",
+        );
+        res.json({
+          source: "blockvision-error",
+          status: r.status,
+          count: 0,
+          nfts: [] as unknown[],
+        });
+        return;
+      }
+      const raw = (await readJsonWithLimit(
+        r,
+        MAX_RESPONSE_BYTES,
+      )) as BlockvisionNftResponse;
+      const items: BlockvisionNft[] = Array.isArray(raw?.result)
+        ? raw.result
+        : Array.isArray(raw?.result?.data)
+        ? raw.result.data
+        : [];
+      const nfts = items
+        .map((it) => {
+          const addr =
+            typeof it.contractAddress === "string"
+              ? it.contractAddress.toLowerCase()
+              : null;
+          if (!addr || !/^0x[a-fA-F0-9]{40}$/.test(addr)) return null;
+          const type = normalizeNftType(it.ercStandard);
+          if (!type) return null;
+          const tokenId =
+            typeof it.tokenId === "string"
+              ? it.tokenId
+              : typeof it.tokenId === "number"
+              ? String(it.tokenId)
+              : null;
+          if (!tokenId || !/^[0-9]+$/.test(tokenId)) return null;
+          const balance =
+            typeof it.qty === "string"
+              ? it.qty
+              : typeof it.qty === "number"
+              ? String(it.qty)
+              : "1";
+          return {
+            contractAddress: addr,
+            tokenId,
+            type,
+            balance,
+            name: typeof it.name === "string" ? it.name : null,
+            collectionName:
+              (typeof it.collectionName === "string"
+                ? it.collectionName
+                : undefined) ??
+              (typeof it.collection?.name === "string"
+                ? it.collection.name
+                : null),
+            imageUrl: normalizeImage(it.image ?? it.imageUrl),
+          };
+        })
+        .filter((n): n is NonNullable<typeof n> => n !== null)
+        .slice(0, MAX_NFTS);
+
+      const payload = { source: "blockvision", count: nfts.length, nfts };
+      evictCache();
+      cache.set(cacheKey, { at: now, payload });
+      res.json(payload);
+      return;
+    } catch (err) {
+      logger.warn({ err }, "Blockvision NFT fetch failed");
+      res.json({
+        source: "blockvision-error",
+        count: 0,
+        nfts: [] as unknown[],
+      });
+      return;
+    }
+  }
+
+  // ─── Blockscout-compatible chains (Ethereum / Monad testnet) ───────
+  const base = EXPLORER_BASE[chainId];
+  // Blockscout exposes NFTs via /addresses/{addr}/nft. The `?type=` filter
+  // accepts a comma-separated list. Some shards return a paginated `items`
+  // shape, others return a bare array.
+  const candidates = [
+    `${base}/api/v2/addresses/${address}/nft?type=ERC-721,ERC-1155`,
+    `${base}/api/v2/addresses/${address}/tokens?type=ERC-721,ERC-1155`,
+  ];
+
+  for (const url of candidates) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+      const r = await fetch(url, {
+        headers: { accept: "application/json" },
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+      if (!r.ok) continue;
+      const contentLength = r.headers.get("content-length");
+      if (contentLength !== null && Number(contentLength) > MAX_RESPONSE_BYTES) {
+        logger.warn({ url, contentLength }, "explorer NFT response too large, skipping");
+        continue;
+      }
+
+      const raw: unknown = await readJsonWithLimit(r, MAX_RESPONSE_BYTES);
+      const items: any[] = Array.isArray(raw)
+        ? raw
+        : Array.isArray((raw as any)?.items)
+        ? (raw as any).items
+        : [];
+
+      const nfts = items
+        .map((it) => {
+          const tok = it?.token ?? it;
+          const addrRaw: unknown = tok?.address_hash ?? tok?.address;
+          if (typeof addrRaw !== "string") return null;
+          if (!/^0x[a-fA-F0-9]{40}$/.test(addrRaw)) return null;
+          const type = normalizeNftType(tok?.type);
+          if (!type) return null;
+          const tokenId =
+            typeof it.id === "string"
+              ? it.id
+              : typeof it.id === "number"
+              ? String(it.id)
+              : typeof it?.token_id === "string"
+              ? it.token_id
+              : typeof it?.token_id === "number"
+              ? String(it.token_id)
+              : null;
+          // Blockscout's /tokens endpoint doesn't carry a per-instance id.
+          // Skip those rows — they describe the collection, not a burnable
+          // item.
+          if (!tokenId || !/^[0-9]+$/.test(tokenId)) return null;
+          const balance =
+            typeof it.value === "string"
+              ? it.value
+              : typeof it.value === "number"
+              ? String(it.value)
+              : "1";
+          const meta = it?.metadata ?? it?.token_instance?.metadata;
+          const image =
+            typeof meta?.image === "string"
+              ? meta.image
+              : typeof meta?.image_url === "string"
+              ? meta.image_url
+              : null;
+          return {
+            contractAddress: addrRaw.toLowerCase(),
+            tokenId,
+            type,
+            balance,
+            name:
+              typeof meta?.name === "string"
+                ? meta.name
+                : typeof tok?.name === "string"
+                ? tok.name
+                : null,
+            collectionName:
+              typeof tok?.name === "string" ? tok.name : null,
+            imageUrl: normalizeImage(image),
+          };
+        })
+        .filter((n): n is NonNullable<typeof n> => n !== null)
+        .slice(0, MAX_NFTS);
+
+      const payload = { source: url, count: nfts.length, nfts };
+      evictCache();
+      cache.set(cacheKey, { at: now, payload });
+      res.json(payload);
+      return;
+    } catch (err) {
+      logger.warn({ err, url }, "explorer NFT fetch failed");
+      continue;
+    }
+  }
+
+  const payload = { source: null, count: 0, nfts: [] as unknown[] };
+  evictCache();
+  cache.set(cacheKey, { at: now, payload });
+  res.json(payload);
+});
+
 export default router;

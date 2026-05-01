@@ -147,3 +147,52 @@ Backend lives in the chain-143 branch of
 - Successful responses cached for 15s; upstream errors and 429s are NOT
   cached so retries actually re-fetch
 - 10s timeout, 1 MiB body cap, validates address format before forwarding
+
+### NFT burn support (ERC-721 + ERC-1155)
+
+Discovery and burn for non-fungible tokens. Same chain matrix as ERC-20
+(Ethereum mainnet, Monad mainnet, Monad testnet), burn-only — no
+recovery / marketplace path.
+
+**Discovery:** `GET /api/explorer/nfts?chainId&address`
+- chain `143` → Blockvision `/v2/monad/account/nfts`. Same
+  `MISSING_BLOCKVISION_API_KEY` payload contract as `/explorer/tokens`.
+- chains `1` and `10143` → Blockscout
+  `/api/v2/addresses/{addr}/nft?type=ERC-721,ERC-1155` (with
+  `/tokens?type=…` as a fallback for shards that group differently).
+- Normalized to
+  `{ source, count, nfts: [{ contractAddress, tokenId, type:'erc721'|'erc1155',
+                             balance, name?, collectionName?, imageUrl? }] }`.
+- Same caching (15s), 10s timeout, 1 MiB body cap, and SSRF guard as the
+  fungible scanner. Hard cap of 500 NFTs per response to keep the grid
+  responsive on whales. `ipfs://` and `ar://` URIs are rewritten to
+  `https://ipfs.io/ipfs/` and `https://arweave.net/` on the way out.
+
+**Burn UX:** A "Tokens / NFTs" segmented toggle on the Incinerator page
+swaps the discovery surface for a `<NftBurner />` (lives in
+`artifacts/ash/src/components/NftBurner.tsx`):
+- Grid of NFT tiles, each multi-selectable.
+- Each tile renders the indexer's image URL with `referrerpolicy=no-referrer`;
+  on load failure or absence we drop to a deterministic initials tile —
+  no dicebear or third-party fallback service.
+- Confirm dialog reuses the "type BURN" phrase pattern.
+- Per-NFT signature loop:
+  - ERC-721 → `safeTransferFrom(owner, 0x…dEaD, tokenId)`
+  - ERC-1155 → `safeTransferFrom(owner, 0x…dEaD, id, balance, "0x")`
+- Each signed tx is awaited via `waitForTransactionReceipt` before the
+  next, mirroring the ERC-20 burn loop's nonce + UX behavior.
+
+**Persistence:** `burn_history` carries three new optional columns:
+- `token_type` (`erc20|erc721|erc1155`, default `erc20` for legacy rows),
+- `token_id` (numeric string, nullable),
+- `collection_name` (nullable, max 128).
+
+The OpenAPI contract in `lib/api-spec/openapi.yaml` was extended in
+parallel — `pnpm --filter @workspace/api-spec run codegen` regenerates
+the typed client. `HistoryPanel` detects `tokenType !== "erc20"` and
+renders a collection + `#tokenId` row with an ERC-721/ERC-1155 badge
+instead of `formatUnits` decimals.
+
+Discord notifications branch on `tokenType` in
+`artifacts/api-server/src/lib/discord.ts` — NFT burns post a
+collection + token id embed instead of the formatted-amount embed.

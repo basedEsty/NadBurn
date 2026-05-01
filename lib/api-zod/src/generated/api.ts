@@ -109,6 +109,9 @@ export const ListBurnHistoryResponse = zod.object({
       mode: zod.string(),
       txHash: zod.string(),
       recoveredNative: zod.string().nullish(),
+      tokenType: zod.enum(["erc20", "erc721", "erc1155"]).optional(),
+      tokenId: zod.string().nullish(),
+      collectionName: zod.string().nullish(),
       createdAt: zod.coerce.date(),
     }),
   ),
@@ -122,7 +125,7 @@ export const recordBurnHistoryBodyChainIdMax = 2147483647;
 export const recordBurnHistoryBodyTokenAddressRegExp = new RegExp(
   "^(native|0x[a-fA-F0-9]{40})$",
 );
-export const recordBurnHistoryBodyTokenSymbolMax = 32;
+export const recordBurnHistoryBodyTokenSymbolMax = 64;
 
 export const recordBurnHistoryBodyTokenDecimalsMin = 0;
 export const recordBurnHistoryBodyTokenDecimalsMax = 36;
@@ -134,6 +137,8 @@ export const recordBurnHistoryBodyTxHashRegExp = new RegExp(
 export const recordBurnHistoryBodyRecoveredNativeRegExp = new RegExp(
   "^[0-9]{1,80}$",
 );
+export const recordBurnHistoryBodyTokenIdRegExp = new RegExp("^[0-9]{1,80}$");
+export const recordBurnHistoryBodyCollectionNameMax = 128;
 
 export const RecordBurnHistoryBody = zod.object({
   chainId: zod.number().min(1).max(recordBurnHistoryBodyChainIdMax),
@@ -149,6 +154,12 @@ export const RecordBurnHistoryBody = zod.object({
   recoveredNative: zod
     .string()
     .regex(recordBurnHistoryBodyRecoveredNativeRegExp)
+    .nullish(),
+  tokenType: zod.enum(["erc20", "erc721", "erc1155"]).optional(),
+  tokenId: zod.string().regex(recordBurnHistoryBodyTokenIdRegExp).nullish(),
+  collectionName: zod
+    .string()
+    .max(recordBurnHistoryBodyCollectionNameMax)
     .nullish(),
 });
 

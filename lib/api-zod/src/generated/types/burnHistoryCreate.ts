@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { BurnHistoryCreateMode } from "./burnHistoryCreateMode";
+import type { BurnHistoryCreateTokenType } from "./burnHistoryCreateTokenType";
 
 export interface BurnHistoryCreate {
   /**
@@ -17,7 +18,7 @@ export interface BurnHistoryCreate {
   tokenAddress: string;
   /**
    * @minLength 1
-   * @maxLength 32
+   * @maxLength 64
    */
   tokenSymbol: string;
   /**
@@ -35,4 +36,15 @@ export interface BurnHistoryCreate {
    * @pattern ^[0-9]{1,80}$
    */
   recoveredNative?: string | null;
+  tokenType?: BurnHistoryCreateTokenType;
+  /**
+   * @nullable
+   * @pattern ^[0-9]{1,80}$
+   */
+  tokenId?: string | null;
+  /**
+   * @maxLength 128
+   * @nullable
+   */
+  collectionName?: string | null;
 }

@@ -378,7 +378,7 @@ components:
         tokenSymbol:
           type: string
           minLength: 1
-          maxLength: 32
+          maxLength: 64
         tokenDecimals:
           type: integer
           minimum: 0
@@ -395,6 +395,15 @@ components:
         recoveredNative:
           type: [string, 'null']
           pattern: '^[0-9]{1,80}$'
+        tokenType:
+          type: string
+          enum: [erc20, erc721, erc1155]
+        tokenId:
+          type: [string, 'null']
+          pattern: '^[0-9]{1,80}$'
+        collectionName:
+          type: [string, 'null']
+          maxLength: 128
     BurnHistoryItem:
       type: object
       required: [id, chainId, tokenAddress, tokenSymbol, tokenDecimals, amount, mode, txHash, createdAt]
@@ -416,6 +425,13 @@ components:
         txHash:
           type: string
         recoveredNative:
+          type: [string, 'null']
+        tokenType:
+          type: string
+          enum: [erc20, erc721, erc1155]
+        tokenId:
+          type: [string, 'null']
+        collectionName:
           type: [string, 'null']
         createdAt:
           type: string

@@ -22,7 +22,7 @@ export default function LandingPage() {
         </h1>
         
         <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-          The cleanest way to wipe worthless tokens from your wallet. Send the nads straight to the void on Monad and Ethereum — or melt them back into MON when liquidity allows.
+          The cleanest way to wipe worthless tokens and dead NFTs from your wallet. Send the nads straight to the void on Monad and Ethereum — or melt fungible dust back into MON when liquidity allows.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
@@ -61,8 +61,8 @@ export default function LandingPage() {
           <div className="p-3 rounded-full bg-white/5 text-primary">
             <Info className="w-6 h-6" />
           </div>
-          <h3 className="text-xl font-medium text-white text-halo-soft">Any ERC‑20</h3>
-          <p className="text-muted-foreground">Paste any contract or let auto‑detect surface every fragment already cluttering your wallet.</p>
+          <h3 className="text-xl font-medium text-white text-halo-soft">Tokens &amp; NFTs</h3>
+          <p className="text-muted-foreground">Auto‑detect surfaces every ERC‑20, ERC‑721, and ERC‑1155 in your wallet — paste a contract for the obscure ones, then torch them in one batch.</p>
         </div>
       </motion.div>
     </div>

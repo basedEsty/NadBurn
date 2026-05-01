@@ -19,6 +19,13 @@ export const burnHistoryTable = pgTable(
     mode: varchar("mode", { length: 16 }).notNull(),
     txHash: varchar("tx_hash").notNull(),
     recoveredNative: varchar("recovered_native"),
+    // NFT support: tokenType discriminates between fungible ERC-20 burns
+    // (default for legacy rows) and ERC-721 / ERC-1155 burns. tokenId is
+    // populated for NFTs only, collectionName is the human-readable
+    // collection name when the indexer surfaces one.
+    tokenType: varchar("token_type", { length: 16 }).notNull().default("erc20"),
+    tokenId: varchar("token_id"),
+    collectionName: varchar("collection_name", { length: 128 }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

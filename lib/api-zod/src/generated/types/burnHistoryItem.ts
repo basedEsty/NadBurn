@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { BurnHistoryItemTokenType } from "./burnHistoryItemTokenType";
 
 export interface BurnHistoryItem {
   id: string;
@@ -17,5 +18,10 @@ export interface BurnHistoryItem {
   txHash: string;
   /** @nullable */
   recoveredNative?: string | null;
+  tokenType?: BurnHistoryItemTokenType;
+  /** @nullable */
+  tokenId?: string | null;
+  /** @nullable */
+  collectionName?: string | null;
   createdAt: Date;
 }

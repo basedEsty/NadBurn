@@ -17,14 +17,15 @@ router.get("/burn-history", async (req: Request, res: Response) => {
     const rows = await withUserClient(req.user.id, async (client) => {
       const r = await client.query(
         `SELECT id, chain_id, token_address, token_symbol, token_decimals,
-                amount, mode, tx_hash, recovered_native, created_at
+                amount, mode, tx_hash, recovered_native,
+                token_type, token_id, collection_name, created_at
          FROM burn_history
          WHERE user_id = $1
          ORDER BY created_at DESC
          LIMIT 200`,
         [req.user.id],
       );
-      return r.rows.map((row) => ({
+      return r.rows.map((row: Record<string, unknown>) => ({
         id: row.id,
         chainId: row.chain_id,
         tokenAddress: row.token_address,
@@ -34,6 +35,9 @@ router.get("/burn-history", async (req: Request, res: Response) => {
         mode: row.mode,
         txHash: row.tx_hash,
         recoveredNative: row.recovered_native,
+        tokenType: row.token_type ?? "erc20",
+        tokenId: row.token_id,
+        collectionName: row.collection_name,
         createdAt:
           row.created_at instanceof Date
             ? row.created_at.toISOString()
@@ -63,10 +67,12 @@ router.post("/burn-history", async (req: Request, res: Response) => {
       const r = await client.query(
         `INSERT INTO burn_history
            (user_id, chain_id, token_address, token_symbol, token_decimals,
-            amount, mode, tx_hash, recovered_native)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            amount, mode, tx_hash, recovered_native,
+            token_type, token_id, collection_name)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
          RETURNING id, chain_id, token_address, token_symbol, token_decimals,
-                   amount, mode, tx_hash, recovered_native, created_at`,
+                   amount, mode, tx_hash, recovered_native,
+                   token_type, token_id, collection_name, created_at`,
         [
           req.user.id,
           data.chainId,
@@ -77,6 +83,9 @@ router.post("/burn-history", async (req: Request, res: Response) => {
           data.mode,
           data.txHash,
           data.recoveredNative ?? null,
+          data.tokenType ?? "erc20",
+          data.tokenId ?? null,
+          data.collectionName ?? null,
         ],
       );
       const row = r.rows[0];
@@ -90,6 +99,9 @@ router.post("/burn-history", async (req: Request, res: Response) => {
         mode: row.mode,
         txHash: row.tx_hash,
         recoveredNative: row.recovered_native,
+        tokenType: row.token_type ?? "erc20",
+        tokenId: row.token_id,
+        collectionName: row.collection_name,
         createdAt:
           row.created_at instanceof Date
             ? row.created_at.toISOString()
@@ -105,6 +117,9 @@ router.post("/burn-history", async (req: Request, res: Response) => {
       mode:           item.mode,
       txHash:         item.txHash,
       recoveredNative: item.recoveredNative,
+      tokenType:      item.tokenType,
+      tokenId:        item.tokenId,
+      collectionName: item.collectionName,
     });
 
     res.status(201).json(item);

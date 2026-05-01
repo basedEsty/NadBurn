@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@workspace/replit-auth-web";
 import { api, type BurnHistoryItem } from "@/lib/api";
-import { ExternalLink, History, Coins, Flame } from "lucide-react";
+import { ExternalLink, History, Coins, Flame, Image as ImageIcon } from "lucide-react";
 import { formatUnits } from "viem";
 
 const EXPLORERS: Record<number, string> = {
@@ -22,23 +22,57 @@ function HistoryRow({ item }: { item: BurnHistoryItem }) {
   const explorer = EXPLORERS[item.chainId];
   const date = new Date(item.createdAt);
   const isRecover = item.mode === "recover";
+  // Treat any non-erc20 (or missing) tokenType as fungible for safety. Only
+  // burn rows that explicitly record erc721/erc1155 render as NFT cards —
+  // legacy rows from before the migration default to "erc20".
+  const isNft = item.tokenType === "erc721" || item.tokenType === "erc1155";
   return (
     <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-white/5 border border-white/5 hover:border-white/10 transition">
       <div className="flex items-center gap-3 min-w-0">
         <div
           className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-            isRecover ? "bg-emerald-500/15 text-emerald-300" : "bg-primary/15 text-primary"
+            isNft
+              ? "bg-fuchsia-500/15 text-fuchsia-300"
+              : isRecover
+              ? "bg-emerald-500/15 text-emerald-300"
+              : "bg-primary/15 text-primary"
           }`}
         >
-          {isRecover ? <Coins className="w-4 h-4" /> : <Flame className="w-4 h-4" />}
+          {isNft ? (
+            <ImageIcon className="w-4 h-4" />
+          ) : isRecover ? (
+            <Coins className="w-4 h-4" />
+          ) : (
+            <Flame className="w-4 h-4" />
+          )}
         </div>
         <div className="min-w-0">
-          <div className="text-sm text-white truncate">
-            {isRecover ? "Recovered" : "Burned"}{" "}
-            <span className="font-mono">
-              {formatAmount(item.amount, item.tokenDecimals)} {item.tokenSymbol}
-            </span>
-          </div>
+          {isNft ? (
+            <div className="text-sm text-white truncate">
+              Burned{" "}
+              <span className="font-medium">
+                {item.collectionName || item.tokenSymbol}
+              </span>{" "}
+              {item.tokenId && (
+                <span className="font-mono text-white/80">#{item.tokenId}</span>
+              )}{" "}
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/10 text-white/70 align-middle">
+                {item.tokenType === "erc1155" ? "ERC-1155" : "ERC-721"}
+              </span>
+              {item.tokenType === "erc1155" && item.amount && item.amount !== "1" && (
+                <span className="ml-1 font-mono text-xs text-white/60">
+                  ×{item.amount}
+                </span>
+              )}
+            </div>
+          ) : (
+            <div className="text-sm text-white truncate">
+              {isRecover ? "Recovered" : "Burned"}{" "}
+              <span className="font-mono">
+                {formatAmount(item.amount, item.tokenDecimals)} {item.tokenSymbol}
+              </span>
+            </div>
+          )}
           <div className="text-xs text-muted-foreground">
             {date.toLocaleString()} · chain {item.chainId}
           </div>

@@ -59,6 +59,15 @@ export const BurnHistoryCreateMode = {
   recover: "recover",
 } as const;
 
+export type BurnHistoryCreateTokenType =
+  (typeof BurnHistoryCreateTokenType)[keyof typeof BurnHistoryCreateTokenType];
+
+export const BurnHistoryCreateTokenType = {
+  erc20: "erc20",
+  erc721: "erc721",
+  erc1155: "erc1155",
+} as const;
+
 export interface BurnHistoryCreate {
   /**
    * @minimum 1
@@ -69,7 +78,7 @@ export interface BurnHistoryCreate {
   tokenAddress: string;
   /**
    * @minLength 1
-   * @maxLength 32
+   * @maxLength 64
    */
   tokenSymbol: string;
   /**
@@ -87,7 +96,27 @@ export interface BurnHistoryCreate {
    * @pattern ^[0-9]{1,80}$
    */
   recoveredNative?: string | null;
+  tokenType?: BurnHistoryCreateTokenType;
+  /**
+   * @nullable
+   * @pattern ^[0-9]{1,80}$
+   */
+  tokenId?: string | null;
+  /**
+   * @maxLength 128
+   * @nullable
+   */
+  collectionName?: string | null;
 }
+
+export type BurnHistoryItemTokenType =
+  (typeof BurnHistoryItemTokenType)[keyof typeof BurnHistoryItemTokenType];
+
+export const BurnHistoryItemTokenType = {
+  erc20: "erc20",
+  erc721: "erc721",
+  erc1155: "erc1155",
+} as const;
 
 export interface BurnHistoryItem {
   id: string;
@@ -100,6 +129,11 @@ export interface BurnHistoryItem {
   txHash: string;
   /** @nullable */
   recoveredNative?: string | null;
+  tokenType?: BurnHistoryItemTokenType;
+  /** @nullable */
+  tokenId?: string | null;
+  /** @nullable */
+  collectionName?: string | null;
   createdAt: string;
 }
 
